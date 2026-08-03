@@ -448,4 +448,79 @@
 
     <!-- Whether the device enable the non-standalone (NSA) mode of 5G NR.-->
     <bool name="config_telephony5gNonStandalone">true</bool>
+    <!-- Auto-brightness in nits.
+
+         Without this array mBrightnessLevelsNits is empty and the framework falls
+         back to config_autoBrightnessLcdBacklightValues, which it interprets on the
+         legacy 0-255 scale. Our array is written for 0-4095, so every value past the
+         5th exceeded 255 and clamped to 1.0 - above roughly 10 lux the screen pinned
+         to maximum brightness. Verified on device: mBrightnessLevelsMap read
+         [0.1197, 0.2500, 0.4868, 0.7434, 0.9803, 1.0, 1.0, ...] which is exactly
+         32/255, 65/255, 125/255, 190/255, 250/255, then clamped.
+
+         Derived from this panel's own nits mapping in configs/display_id_0.xml
+         (brightness 0.002686859 -> 1.0 nit, 1.0 -> 400.0 nits) applied to the
+         existing backlight curve, so the curve shape is preserved. Must stay
+         len(config_autoBrightnessLevels) + 1 entries. -->
+    <array name="config_autoBrightnessDisplayValuesNits">
+        <item>4.1</item>
+        <item>7.3</item>
+        <item>13.2</item>
+        <item>19.5</item>
+        <item>25.4</item>
+        <item>27.3</item>
+        <item>38.0</item>
+        <item>48.3</item>
+        <item>64.8</item>
+        <item>67.3</item>
+        <item>67.3</item>
+        <item>67.3</item>
+        <item>68.2</item>
+        <item>68.2</item>
+        <item>68.2</item>
+        <item>69.2</item>
+        <item>69.2</item>
+        <item>69.2</item>
+        <item>70.2</item>
+        <item>70.2</item>
+        <item>71.2</item>
+        <item>71.2</item>
+        <item>71.2</item>
+        <item>72.1</item>
+        <item>72.1</item>
+        <item>72.1</item>
+        <item>74.1</item>
+        <item>75.1</item>
+        <item>77.0</item>
+        <item>77.0</item>
+        <item>78.0</item>
+        <item>78.9</item>
+        <item>79.9</item>
+        <item>81.9</item>
+        <item>82.8</item>
+        <item>83.8</item>
+        <item>84.3</item>
+        <item>84.8</item>
+        <item>85.8</item>
+        <item>87.7</item>
+        <item>88.7</item>
+        <item>89.7</item>
+        <item>90.6</item>
+        <item>92.6</item>
+        <item>93.6</item>
+        <item>110.1</item>
+        <item>127.7</item>
+        <item>149.1</item>
+        <item>169.6</item>
+        <item>191.0</item>
+        <item>215.4</item>
+        <item>239.7</item>
+        <item>247.5</item>
+        <item>306.9</item>
+        <item>344.0</item>
+        <item>346.9</item>
+        <item>355.7</item>
+        <item>400.0</item>
+    </array>
+
 </resources>

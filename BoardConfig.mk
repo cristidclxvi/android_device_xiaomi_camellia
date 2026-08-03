@@ -83,7 +83,14 @@ TARGET_OTA_ASSERT_DEVICE := camellia,camellian,camellian_p
 # Partitions (sizes from stock fstab.mt6833 + super partition layout)
 BOARD_FLASH_BLOCK_SIZE := 131072
 BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864
-BOARD_DTBOIMG_PARTITION_SIZE := 33554432
+BOARD_DTBOIMG_PARTITION_SIZE := 8388608
+
+# Ship the stock dtbo. We previously produced no dtbo at all and never flashed the
+# partition, so the device ran our kernel against whatever dtbo happened to be
+# resident. Stock delivers the NFC node (nfc@08 / nfc_mtk) via
+# /fragment@37/__overlay__, which is why our compiled-in st21nfc driver never
+# probed -- the DT node it binds to was absent.
+BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img
 BOARD_SUPER_PARTITION_SIZE := 9126805504
 
 BOARD_SUPER_PARTITION_GROUPS := mediatek_dynamic_partitions
