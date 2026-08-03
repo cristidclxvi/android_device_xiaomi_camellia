@@ -188,3 +188,4 @@ BOARD_MKBOOTIMG_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
 # external/wpa_supplicant_8 never fires, so no service defines
 # wpa_supplicant and Wi-Fi STA/P2P can never start.
 WIFI_HIDL_UNIFIED_SUPPLICANT_SERVICE_RC_ENTRY := true
+

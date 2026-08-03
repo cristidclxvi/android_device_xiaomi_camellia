@@ -167,3 +167,10 @@
 
 # peel ir nodes
 /dev/lirc0                0660   system     system
+
+# Panel high brightness mode, driven by the LiveDisplay sysfs HAL (Outdoor mode).
+# The HAL checks access(path, R_OK|W_OK) in its constructor and abort()s if no
+# path is writable. Without this the node is 0644 root:root, the service dies on
+# startup, and because its vintf fragment declares ISunlightEnhancement,
+# system_server blocks waiting for it and the device never finishes booting.
+/sys/devices/platform/14000000.dispsys_config   mtk_fb_hbm   0664  system   system

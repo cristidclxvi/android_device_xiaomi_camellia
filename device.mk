@@ -324,3 +324,7 @@ $(call inherit-product, vendor/xiaomi/camellia/camellia-vendor.mk)
 # Stock and AlphaDroid both set it.
 PRODUCT_VENDOR_PROPERTIES += \
     vendor.usb.controller=musb-hdrc
+
+# LiveDisplay sysfs backend (provides Outdoor mode / HBM)
+PRODUCT_PACKAGES += \
+    vendor.lineage.livedisplay-service.sysfs
