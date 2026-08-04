@@ -78,18 +78,30 @@ BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_KERNEL_TAGS_OFFSET)
 
 # OTA assert device names: covers Redmi N10 5G CN/GL/IN + POCO M3 Pro 5G GL/IN (all share camellia codename)
-TARGET_OTA_ASSERT_DEVICE := camellia,camellian,camellian_p
+TARGET_OTA_ASSERT_DEVICE := camellia,camellian
 
 # Partitions (sizes from stock fstab.mt6833 + super partition layout)
 BOARD_FLASH_BLOCK_SIZE := 131072
 BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864
 BOARD_DTBOIMG_PARTITION_SIZE := 8388608
 
-# Ship the stock dtbo. We previously produced no dtbo at all and never flashed the
-# partition, so the device ran our kernel against whatever dtbo happened to be
-# resident. Stock delivers the NFC node (nfc@08 / nfc_mtk) via
-# /fragment@37/__overlay__, which is why our compiled-in st21nfc driver never
-# probed -- the DT node it binds to was absent.
+# Ship the stock dtbo (byte-identical to factory images/dtbo.img,
+# md5 69f38af3796c4b8512eef0aa8910eaeb). MTK dt_table, dt_entry_count=1,
+# selected by androidboot.dtbo_idx=0. We previously produced no dtbo at all and
+# never flashed the partition, so the device ran our kernel against whatever
+# dtbo happened to be resident -- that is why shipping stock dtbo is correct.
+#
+# NFC note (verified 2026-08-03, do not re-investigate): the overlay DOES
+# apply. /fragment@37/__overlay__/nfc@08 ("mediatek,nfc", reg 0x08, status
+# okay) is live under /sys/firmware/devicetree/base/i2c7@11e02000/ and i2c
+# client 7-0008 is instantiated. (`find /proc/device-tree` without -L is a
+# false negative -- it is a symlink.) NFC is absent because this unit is
+# sku=camellia (CN, M2103K19C): Xiaomi's st21nfc_dev_init() returns -EPERM
+# ("not nfc phone!") unless the kernel cmdline has
+# androidboot.product.hardware.sku=camellian or camellianp. Stock gates NFC on
+# the same two SKUs in odm/etc/permissions/sku_*, the HAL init rc, and
+# build_$(sku).prop. device.mk and rootdir/etc/init.stnfc.rc already mirror
+# that gating. The camellia SKU has no NFC; nothing here is broken.
 BOARD_PREBUILT_DTBOIMAGE := $(DEVICE_PATH)/prebuilt/dtbo.img
 BOARD_SUPER_PARTITION_SIZE := 9126805504
 
@@ -102,7 +114,10 @@ BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_PRODUCTIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_SYSTEM_EXTIMAGE_FILE_SYSTEM_TYPE := ext4
 
-BOARD_PRODUCTIMAGE_MINIMAL_PARTITION_RESERVED_SIZE := false
+# Let vendor/lineage pick the reserved size. It defaults this to true for
+# PRODUCT_VIRTUAL_AB_OTA devices (we are one: misc_info virtual_ab=true), which
+# reserves 1188036608 instead of 1957691392 and returns ~734 MB to super.
+# Overriding it to false here also defeated the `?=` in that file.
 -include vendor/lineage/config/BoardConfigReservedSize.mk
 
 TARGET_COPY_OUT_SYSTEM_EXT := system_ext
@@ -132,8 +147,10 @@ ENABLE_VENDOR_RIL_SERVICE := true
 include device/mediatek/sepolicy_vndr/SEPolicy.mk
 BOARD_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy/vendor
 
-# Security patch (must match latest applied patch level)
-VENDOR_SECURITY_PATCH := 2024-12-01
+# Security patch - must match the SPL of the shipped vendor blobs, which come
+# from stock MIUI 14 V14.0.6.0.TKSMIXM (ro.vendor.build.security_patch=2023-09-01).
+# Do not raise this to the platform SPL: the blobs are what it describes.
+VENDOR_SECURITY_PATCH := 2023-09-01
 
 # Verified Boot (AVB v2 with hashtree disabled for custom ROM flashing)
 BOARD_AVB_ENABLE := true
