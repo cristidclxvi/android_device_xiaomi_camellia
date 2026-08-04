@@ -1,0 +1,15 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+cc_library_static {
+    name: "init_xiaomi_camellia",
+    srcs: [
+        "init_xiaomi_camellia.cpp",
+        "libinit_utils.cpp",
+    ],
+    whole_static_libs: ["libbase"],
+    include_dirs: ["system/core/init"],
+    recovery_available: true,
+}

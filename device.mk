@@ -148,6 +148,10 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/nfc/libnfc-hal-st.conf:$(TARGET_COPY_OUT_VENDOR)/etc/libnfc-hal-st.conf \
     $(LOCAL_PATH)/configs/nfc/libnfc-nci.conf:$(TARGET_COPY_OUT_VENDOR)/etc/libnfc-nci.conf
 
+# NFC feature XMLs only for the two SKUs whose PCBA has the ST21NFC chip
+# (camellian = M2103K19G, camellianp = M2103K19PG). sku=camellia (CN) and the
+# other CN/IN SKUs have no NFC hardware -- intentionally excluded, matches
+# stock. See the NFC note in BoardConfig.mk.
 PRODUCT_COPY_FILES += $(foreach device,camellian camellianp, \
     frameworks/native/data/etc/android.hardware.nfc.xml:$(TARGET_COPY_OUT_ODM)/etc/permissions/sku_$(device)/android.hardware.nfc.xml \
     frameworks/native/data/etc/android.hardware.nfc.hce.xml:$(TARGET_COPY_OUT_ODM)/etc/permissions/sku_$(device)/android.hardware.nfc.hce.xml \
@@ -218,6 +222,18 @@ PRODUCT_PACKAGES += \
 
 # Properties
 include $(LOCAL_PATH)/vendor_logtag.mk
+
+# RSC (Runtime Switchable Configuration) per-region modem profiles.
+# Stock ships these under /vendor/etc/rsc/<rsc>/ and selects on androidboot.rsc.
+# NOTE: stock's own vendor build.prop does NOT import these - it hardcodes the CN
+# values exactly as our vendor.prop does. The consumer is MediaTek's RSC
+# mechanism, not init's property loader, so shipping these alone is NOT proven
+# to switch the modem profile on Global/India units. Shipped for stock parity.
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/rsc/camelliacn/ro.prop:$(TARGET_COPY_OUT_VENDOR)/etc/rsc/camelliacn/ro.prop \
+    $(LOCAL_PATH)/configs/rsc/camelliagl/ro.prop:$(TARGET_COPY_OUT_VENDOR)/etc/rsc/camelliagl/ro.prop \
+    $(LOCAL_PATH)/configs/rsc/camelliain/ro.prop:$(TARGET_COPY_OUT_VENDOR)/etc/rsc/camelliain/ro.prop \
+    $(LOCAL_PATH)/configs/rsc/default/ro.prop:$(TARGET_COPY_OUT_VENDOR)/etc/rsc/default/ro.prop
 
 # Rootdir
 PRODUCT_PACKAGES += \
@@ -292,6 +308,15 @@ PRODUCT_COPY_FILES += \
 # USB
 $(call soong_config_set_bool,android_hardware_mediatek_usb,audio_accessory_supported,true)
 $(call soong_config_set_bool,mediatek_wifi_hal,use_pre_u_qpr2_struct,true)
+
+# Per-variant device identity (brand/device/model/marketname/board), keyed on
+# (ro.boot.hwc, ro.boot.product.hardware.sku). Necessary because
+# ro.product.property_source_order puts odm first and the odm build.prop
+# hardcodes the CN model, so configs/sku/*.prop cannot fix the user-visible
+# identity. system/core/init/Android.bp whole-static-links whatever this names.
+# NOTE: TARGET_INIT_VENDOR_LIB is dead in 23.2 - this soong config is the
+# only remaining mechanism.
+$(call soong_config_set,libinit,vendor_init_lib,//$(LOCAL_PATH)/libinit:init_xiaomi_camellia)
 
 PRODUCT_PACKAGES += \
     android.hardware.usb-service.mediatek \
