@@ -1,0 +1,23 @@
+diff --git a/service/java/com/android/server/wifi/HalDeviceManager.java b/service/java/com/android/server/wifi/HalDeviceManager.java
+index 79b872226a..92e5297c10 100644
+--- a/service/java/com/android/server/wifi/HalDeviceManager.java
++++ b/service/java/com/android/server/wifi/HalDeviceManager.java
+@@ -2573,8 +2573,16 @@ public class HalDeviceManager {
+                     }
+                 }
+                 if (!configureChipSuccess) {
+-                    Log.e(TAG, "executeChipReconfiguration: configureChip error");
+-                    return null;
++                    // MediaTek MT6833: the vendor HAL performs the chip configuration
++                    // correctly (interface handles for wlan0/wlan1/p2p0 are created
++                    // immediately afterwards and are usable) but still reports failure,
++                    // because Android 16's AIDL chip queries it does not implement return
++                    // empty (chipCapabilities={}, radioCombinations=null). Aborting here
++                    // tore down the whole stack and made WiFi impossible to enable.
++                    // Log and continue; if the chip genuinely is not configured the
++                    // subsequent createIface call fails and we return null there anyway.
++                    Log.w(TAG, "executeChipReconfiguration: configureChip reported failure,"
++                            + " continuing (vendor HAL quirk)");
+                 }
+             } else {
+                 // remove all interfaces on the delete list

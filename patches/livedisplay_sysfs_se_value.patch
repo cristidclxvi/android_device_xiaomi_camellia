@@ -1,0 +1,66 @@
+diff --git a/livedisplay/aidl/sysfs/Android.bp b/livedisplay/aidl/sysfs/Android.bp
+index 8fe151f..5c314e5 100644
+--- a/livedisplay/aidl/sysfs/Android.bp
++++ b/livedisplay/aidl/sysfs/Android.bp
+@@ -28,7 +28,9 @@ cc_binary {
+     vendor: true,
+     relative_install_path: "hw",
+     init_rc: ["vendor.lineage.livedisplay-service.sysfs.rc"],
+-    vintf_fragments: select(soong_config_variable("livedisplay_sysfs", "enable_ab"), {
++    // camellia HBM: SE is enabled unconditionally in this fork.
++    vintf_fragments: ["vendor.lineage.livedisplay-service.sysfs-se.xml"] +
++        select(soong_config_variable("livedisplay_sysfs", "enable_ab"), {
+         true: ["vendor.lineage.livedisplay-service.sysfs-ab.xml"],
+         default: [],
+     }) + select(soong_config_variable("livedisplay_sysfs", "enable_ac"), {
+@@ -50,7 +52,11 @@ cc_binary {
+         true: ["vendor.lineage.livedisplay-service.sysfs-se.xml"],
+         default: [],
+     }),
+-    cflags: select(soong_config_variable("livedisplay_sysfs", "enable_ab"), {
++    cflags: [
++        "-DSE_PATH=\"/sys/devices/platform/14000000.dispsys_config/mtk_fb_hbm\"",
++        // level 1 is the NORMAL 21.8mA current (a visual no-op); 3 = 27.4mA
++        "-DSE_ENABLED_VALUE=3",
++    ] + select(soong_config_variable("livedisplay_sysfs", "enable_ab"), {
+         true: ["-DENABLE_AB=true"],
+         default: ["-DENABLE_AB=false"],
+     }) + select(soong_config_variable("livedisplay_sysfs", "enable_ac"), {
+@@ -70,10 +76,14 @@ cc_binary {
+         default: ["-DENABLE_RE=false"],
+     }) + select(soong_config_variable("livedisplay_sysfs", "enable_se"), {
+         true: ["-DENABLE_SE=true"],
+-        default: ["-DENABLE_SE=false"],
++        // camellia: SE (panel HBM) is enabled by default in this fork
++        default: ["-DENABLE_SE=true"],
+     }) + select(soong_config_variable("livedisplay_sysfs", "se_path"), {
+         any @ flag_val: ["-DSE_PATH=\"" + flag_val + "\""],
+         default: [],
++    }) + select(soong_config_variable("livedisplay_sysfs", "se_value"), {
++        any @ flag_val: ["-DSE_ENABLED_VALUE=" + flag_val],
++        default: [],
+     }) + select(soong_config_variable("livedisplay_sysfs", "sre_path"), {
+         any @ flag_val: ["-DSRE_PATH=\"" + flag_val + "\""],
+         default: [],
+diff --git a/livedisplay/aidl/sysfs/SunlightEnhancement.cpp b/livedisplay/aidl/sysfs/SunlightEnhancement.cpp
+index 84eb888..9afd935 100644
+--- a/livedisplay/aidl/sysfs/SunlightEnhancement.cpp
++++ b/livedisplay/aidl/sysfs/SunlightEnhancement.cpp
+@@ -68,7 +68,16 @@ ndk::ScopedAStatus SunlightEnhancement::getEnabled(bool* _aidl_return) {
+ }
+ 
+ ndk::ScopedAStatus SunlightEnhancement::setEnabled(bool enabled) {
+-    if (!WriteStringToFile(enabled ? std::to_string(static_cast<int32_t>(enabled_mode_)) : "0",
++    // Some panels expose graded HBM levels where the enum value 1 is the NORMAL
++    // backlight current (a no-op) and the real boosts are higher. SE_ENABLED_VALUE
++    // lets a device pick the level to write. MT6833/camellia: 1 = 21.8mA (default),
++    // 2 = 25mA, 3 = 27.4mA -- writing 1 looks like HBM does nothing.
++#ifdef SE_ENABLED_VALUE
++    const int32_t on_value = SE_ENABLED_VALUE;
++#else
++    const int32_t on_value = static_cast<int32_t>(enabled_mode_);
++#endif
++    if (!WriteStringToFile(enabled ? std::to_string(on_value) : "0",
+                            file_, true)) {
+         LOG(ERROR) << "Failed to set SunlightEnhancement state";
+         return ndk::ScopedAStatus::fromExceptionCode(EX_SERVICE_SPECIFIC);

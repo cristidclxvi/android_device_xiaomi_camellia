@@ -1,0 +1,141 @@
+diff --git a/bpf/loader/NetBpfLoad.cpp b/bpf/loader/NetBpfLoad.cpp
+index 238864798b..f4797d1ebc 100644
+--- a/bpf/loader/NetBpfLoad.cpp
++++ b/bpf/loader/NetBpfLoad.cpp
+@@ -1620,15 +1620,13 @@ static int doLoad(char** argv, char * const envp[]) {
+     // V bumps the kernel requirement up to 4.19
+     // see also: //system/netd/tests/kernel_test.cpp TestKernel419
+     if (isAtLeastV && !isAtLeastKernelVersion(4, 19)) {
+-        ALOGE("Android V requires kernel 4.19.");
+-        return 5;
++        ALOGW("Android V requires kernel 4.19.");
+     }
+ 
+     // 25Q2 bumps the kernel requirement up to 5.4
+     // see also: //system/netd/tests/kernel_test.cpp TestKernel54
+     if (isAtLeast25Q2 && !isAtLeastKernelVersion(5, 4)) {
+-        ALOGE("Android 25Q2 requires kernel 5.4.");
+-        return 6;
++        ALOGW("Android 25Q2 requires kernel 5.4.");
+     }
+ 
+     // 25Q4 bumps the kernel requirement up to 5.10
+@@ -1858,7 +1856,7 @@ static int doLoad(char** argv, char * const envp[]) {
+             // and thus it should return 0 with errno == ENOENT.
+             ALOGE("bpfGetNextMapId(final %d) returned %d errno %d", mapId, next, errno);
+             if (next || errno != ENOENT) return 35;
+-            if (isAtLeastT || isAtLeastKernelVersion(4, 20)) return 36;
++            if (isAtLeastKernelVersion(4, 20)) return 36;
+             // implies Android S with 4.14 or 4.19 kernel
+             ALOGW("Detected kernel with invalid BPF UAPI - disabling mainline use of eBPF.");
+             // leave a flag that we're 'done'
+diff --git a/bpf/loader/netbpfload.35rc b/bpf/loader/netbpfload.35rc
+index a23bd60e10..cb29aa3b41 100644
+--- a/bpf/loader/netbpfload.35rc
++++ b/bpf/loader/netbpfload.35rc
+@@ -65,5 +65,7 @@ service bpfloader /apex/com.android.tethering/bin/netbpfload
+     #    'cannot prove return value is 0 or 1' or 'unsupported / unknown operation / helper',
+     #    'invalid bpf_context access', etc.
+     #
+-    reboot_on_failure reboot,bpfloader-failed
++    # reboot_on_failure disabled: kernel 4.14 cannot satisfy the V+ BPF
++    # requirements, and rebooting on that turns it into a boot loop.
++    # reboot_on_failure reboot,bpfloader-failed
+     override
+diff --git a/bpf/netd/BpfHandler.cpp b/bpf/netd/BpfHandler.cpp
+index 7367ec5e97..3884290fa3 100644
+--- a/bpf/netd/BpfHandler.cpp
++++ b/bpf/netd/BpfHandler.cpp
+@@ -98,12 +98,12 @@ static Status initPrograms(const char* cg2_path) {
+ 
+     // V bumps the kernel requirement up to 4.19
+     if (isAtLeastV && !isAtLeastKernelVersion(4, 19)) {
+-        return Status("V+ platform with kernel version < 4.19.0 is unsupported");
++        ALOGW("V+ platform with kernel version < 4.19.0 is unsupported");
+     }
+ 
+     // 25Q2 bumps the kernel requirement up to 5.4
+     if (isAtLeast25Q2 && !isAtLeastKernelVersion(5, 4)) {
+-        return Status("25Q2+ platform with kernel version < 5.4.0 is unsupported");
++        ALOGW("25Q2+ platform with kernel version < 5.4.0 is unsupported");
+     }
+ 
+     unique_fd cg_fd(open(cg2_path, O_DIRECTORY | O_RDONLY | O_CLOEXEC));
+diff --git a/staticlibs/device/com/android/net/module/util/SingleWriterBpfMap.java b/staticlibs/device/com/android/net/module/util/SingleWriterBpfMap.java
+index a638cc4151..3de3803ad4 100644
+--- a/staticlibs/device/com/android/net/module/util/SingleWriterBpfMap.java
++++ b/staticlibs/device/com/android/net/module/util/SingleWriterBpfMap.java
+@@ -23,6 +23,7 @@ import androidx.annotation.GuardedBy;
+ import androidx.annotation.NonNull;
+ import androidx.annotation.RequiresApi;
+ 
++import java.util.ArrayList;
+ import java.util.HashMap;
+ import java.util.NoSuchElementException;
+ 
+@@ -64,6 +65,10 @@ public class SingleWriterBpfMap<K extends Struct, V extends Struct> extends BpfM
+     @GuardedBy("this")
+     private final HashMap<K, V> mCache = new HashMap<>();
+ 
++    // Linux kernel-internal ENOTSUPP, which leaks to userspace from bpf(2) on
++    // pre-4.20 kernels for map types whose get_next_key is unimplemented.
++    private static final int ENOTSUPP_KERNEL = 524;
++
+     // This should only ever be called (hence private) once for a given 'path'.
+     // Java-wise what matters is the entire {path, key, value} triplet,
+     // but of course the kernel exclusive lock is just on the path (fd),
+@@ -75,10 +80,19 @@ public class SingleWriterBpfMap<K extends Struct, V extends Struct> extends BpfM
+ 
+         // Populate cache with the current map contents.
+         synchronized (this) {
+-            K currentKey = super.getFirstKey();
+-            while (currentKey != null) {
+-                mCache.put(currentKey, super.getValue(currentKey));
+-                currentKey = super.getNextKey(currentKey);
++            try {
++                K currentKey = super.getFirstKey();
++                while (currentKey != null) {
++                    mCache.put(currentKey, super.getValue(currentKey));
++                    currentKey = super.getNextKey(currentKey);
++                }
++            } catch (ErrnoException e) {
++                // Kernels before 4.20 do not implement map_get_next_key for LPM_TRIE
++                // and fail with the kernel-internal ENOTSUPP (524) rather than
++                // returning an empty result. The map has just been opened and this
++                // class is by construction the sole writer, so starting from an empty
++                // cache is accurate and remains accurate for the process lifetime.
++                if (e.errno != ENOTSUPP_KERNEL) throw e;
+             }
+         }
+     }
+@@ -135,6 +149,30 @@ public class SingleWriterBpfMap<K extends Struct, V extends Struct> extends BpfM
+         return ret;
+     }
+ 
++    @Override
++    public synchronized void forEach(ThrowingBiConsumer<K, V> action) throws ErrnoException {
++        // Serve from the cache for the same reason as containsKey()/getValue(): this
++        // class is the sole writer so the cache is authoritative, and IBpfMap's default
++        // implementation would walk the map with getFirstKey(), which pre-4.20 kernels
++        // cannot do for LPM_TRIE (they fail with the kernel-internal ENOTSUPP).
++        for (var entry : new ArrayList<>(mCache.entrySet())) {
++            action.accept(entry.getKey(), entry.getValue());
++        }
++    }
++
++    @Override
++    public synchronized void clear() throws ErrnoException {
++        // IBpfMap's default clear() walks the map with getFirstKey(). Kernels before
++        // 4.20 do not implement map_get_next_key for LPM_TRIE and fail the walk with
++        // the kernel-internal ENOTSUPP, which would make clear() impossible.
++        // This class is by construction the sole writer, so mCache is an accurate
++        // record of every live key and deleting exactly those is equivalent.
++        for (K key : new ArrayList<>(mCache.keySet())) {
++            super.deleteEntry(key);
++        }
++        mCache.clear();
++    }
++
+     @Override
+     public synchronized boolean containsKey(@NonNull K key) throws ErrnoException {
+         return mCache.containsKey(key);
