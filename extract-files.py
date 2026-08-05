@@ -48,6 +48,16 @@ blob_fixups: blob_fixups_user_type = {
     'vendor/bin/hw/mtkfusionrild': blob_fixup()
         .add_needed('libutils-v32.so'),
 
+    # Stock's libwifi-hal.so, renamed so the LineageOS wrapper can load it.
+    # The soname fix must run under patchelf 0_9: 0_18 (the extract-utils
+    # default) restructures the binary enough that wifi_get_ifaces() returns
+    # zero interfaces and WiFi never comes up. Measured on device, 0_18 -> 0
+    # ifaces, 0_9 -> 3. This is why the FIX_SONAME flag is not used in
+    # proprietary-files.txt - that path always runs the default patchelf.
+    'vendor/lib64/libwifi-hal-mtk.so': blob_fixup()
+        .patchelf_version('0_9')
+        .fix_soname(),
+
     ('vendor/bin/mnld',
      'vendor/lib64/libaalservice.so',
      'vendor/lib64/libcam.utils.sensorprovider.so'): blob_fixup()

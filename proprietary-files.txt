@@ -1312,7 +1312,7 @@ vendor/bin/wlan_assistant
 vendor/etc/init/init.wlan_drv.rc
 vendor/etc/init/wlan_assistant.rc
 vendor/firmware/wifi.cfg
-vendor/lib64/libwifi-hal.so:vendor/lib64/libwifi-hal-mtk.so;FIX_SONAME
+vendor/lib64/libwifi-hal.so:vendor/lib64/libwifi-hal-mtk.so
 
 # Wi-Fi (firmware) - from gold
 vendor/firmware/WIFI_RAM_CODE_soc2_2_1_1.bin|e4d3097818eca0b722d3525efcbe96b462dea636
@@ -1328,3 +1328,6 @@ vendor/lib/modules/wlan_drv_gen4m.ko
 vendor/lib/modules/bt_drv_connac1x.ko
 vendor/lib/modules/gps_drv.ko
 vendor/lib/modules/fmradio_drv_mt6631_6635.ko
+
+# FPSGO - insmod'd unconditionally by init.mt6833.rc on boot
+vendor/lib/modules/fpsgo.ko
