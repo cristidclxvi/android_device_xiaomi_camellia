@@ -108,6 +108,11 @@ MIUI 14 V14.0.6.0 with `./extract-files.py`.
 
 - Kernel: [android_kernel_xiaomi_camellia](https://github.com/cristidclxvi/android_kernel_xiaomi_camellia) — 4.14.186, branch `lineage-23.2`
 
+The kernel branch is based directly on MiCode's `camellian-t-oss` commit, so the
+MediaTek and Xiaomi history is intact and
+`git diff f4e416aea06c..lineage-23.2` shows every change made for this device —
+nine files.
+
 ## License
 
 Apache-2.0, see [LICENSE](LICENSE). Two files under `prebuilt/` are not covered
