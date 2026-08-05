@@ -9,6 +9,6 @@ PRODUCT_MAKEFILES := \
     $(LOCAL_DIR)/lineage_camellia.mk
 
 COMMON_LUNCH_CHOICES := \
-    lineage_camellia-bp1a-user \
-    lineage_camellia-bp1a-userdebug \
-    lineage_camellia-bp1a-eng
+    lineage_camellia-bp4a-user \
+    lineage_camellia-bp4a-userdebug \
+    lineage_camellia-bp4a-eng
