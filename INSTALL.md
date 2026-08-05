@@ -16,11 +16,30 @@ Redmi Note 10 5G / Redmi Note 10T 5G / POCO M3 Pro 5G
 3. Enable **USB debugging** on your device.
 4. Make sure that your model number is one of the following (exact match
    required!):
-   - `M2103K19C` — Redmi Note 10 5G (China)
-   - `M2103K19G` — Redmi Note 10 5G (Global)
-   - `M2103K19I` — Redmi Note 10T 5G (India)
-   - `M2103K19PG` — POCO M3 Pro 5G (Global)
-   - `M2103K19PI` — POCO M3 Pro 5G (India)
+
+   | Model | Device | Status |
+   |---|---|---|
+   | `M2103K19C` | Redmi Note 10 5G (China) | **tested** |
+   | `M2103K19G` | Redmi Note 10 5G (Global) | untested |
+   | `M2103K19I` | Redmi Note 10T 5G (India) | untested |
+   | `M2103K19PG` | POCO M3 Pro 5G (Global) | untested |
+   | `M2103K19PI` | POCO M3 Pro 5G (India) | untested |
+
+> **WARNING:** This ROM has only ever been installed and run on **`M2103K19C`**,
+> by one person, on one unit. The other four models are **expected** to work and
+> nothing is known to be wrong with them — one build serves all five, because
+> every variant's drivers and firmware ship together and the correct ones are
+> chosen at runtime from the hardware IDs. But "expected to work" is not the same
+> as "tested", and no one has verified them.
+>
+> If you have one of the untested models, please treat this as a first run and be
+> prepared to return to stock. Reports are very welcome — the most useful thing
+> you can post is the output of:
+> ```
+> cat /proc/cmdline
+> getprop | grep -E "sku|rsc|hwc|marketname|ro.product.model"
+> ```
+> plus whether NFC, the fingerprint reader, the cameras and mobile data work.
 5. Your bootloader must already be unlocked. Unlocking is Xiaomi's own process
    via Mi Unlock, including their waiting period, and is out of scope here.
 6. Boot your device with the stock OS at least once and check every
@@ -211,8 +230,19 @@ it, so your data is preserved.
 
 - **NFC** is only fitted on `camellian` and `camellianp` units (Global and POCO
   Global). On `camellia` the hardware is absent, and its absence is correct
-  rather than a fault.
+  rather than a fault. The NFC stack ships and is gated on the SKU exactly as
+  stock does it, but since no NFC-equipped unit was available it has never
+  actually run.
 - **Recovery has no touch input.** Use the volume keys to move and power to
   select.
-- One build covers all five model numbers. The ROM ships every variant's drivers
-  and firmware and selects the correct ones at runtime.
+- One build covers all five model numbers. Both touchscreen controllers, both
+  fingerprint readers, both backlight ICs, all five display panels and all nine
+  camera sensor combinations are compiled in and selected at runtime from the
+  bootloader's hardware IDs. On the tested unit that means NVT touch, FPC
+  fingerprint, TI backlight and a Tianma panel; the alternates are shipped but
+  have never been exercised.
+- **Auto-brightness** is calibrated against the one panel present on the tested
+  unit. The other four panels may read slightly differently.
+- Device identity (brand, model, market name) is resolved per variant at boot, so
+  a POCO should report as a POCO. This works on the tested unit but, like
+  everything else above, has not been confirmed on the others.
