@@ -224,6 +224,20 @@ Reboot to recovery and sideload the newer `.zip`. There is no need to format, an
 no need to reflash `boot`. The update installs to the unused slot and switches to
 it, so your data is preserved.
 
+> **IMPORTANT: if you use Google Apps, sideload MindTheGapps again in the same
+> recovery session, before rebooting.** An update replaces the whole system, and
+> GApps live in `/product` and `/system_ext`, not in `/data`. They do **not**
+> survive the update.
+>
+> If you reboot first and only then notice, you do not need to format. Go back
+> to recovery and sideload the add-on; your data and your Google account are
+> untouched. The symptom of skipping it is Play Store and any app that uses Play
+> Services crashing on launch, with
+> `SecurityException: ... requests FLAG_SINGLE_USER, but app does not hold
+> android.permission.INTERACT_ACROSS_USERS` in the log — the `/data` copy of
+> Play Services is still there, but its privileged base in `/product/priv-app`
+> is gone, so it loses its permissions.
+
 ---
 
 ## Notes specific to camellia

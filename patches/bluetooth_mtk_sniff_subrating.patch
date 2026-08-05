@@ -1,0 +1,38 @@
+diff --git a/system/stack/acl/btm_pm.cc b/system/stack/acl/btm_pm.cc
+index e005198c89..76cf2596d0 100644
+--- a/system/stack/acl/btm_pm.cc
++++ b/system/stack/acl/btm_pm.cc
+@@ -91,6 +91,15 @@ const uint8_t btm_pm_md_comp_matrix[BTM_PM_NUM_SET_MODES * BTM_PM_NUM_SET_MODES]
+ 
+         BTM_PM_GET_MD1,  BTM_PM_GET_MD2,  BTM_PM_GET_COMP};
+ 
++// camellia (MT6833): the connsys controller advertises sniff-subrating support
++// in its feature bits, but answers HCI Sniff_Subrating (0x0811) with a Command
++// Status event carrying COMMAND_DISALLOWED instead of the Command Complete the
++// spec requires. AOSP treats the wrong response *form* as fatal
++// (system/gd/hci/hci_layer.cc:278), so com.android.bluetooth aborts and any
++// audio link drops as soon as the stack sub-rates a sniff link. Sniff subrating
++// is a power optimisation only, so never ask for it on this controller.
++static bool controller_supports_sniff_subrating() { return false; }
++
+ static void send_sniff_subrating(uint16_t handle, const RawAddress& addr, uint16_t max_lat,
+                                  uint16_t min_rmt_to, uint16_t min_loc_to) {
+   uint16_t new_max_lat = 0;
+@@ -317,7 +326,7 @@ tBTM_STATUS BTM_SetSsrParams(const RawAddress& remote_bda, uint16_t max_lat, uin
+     return tBTM_STATUS::BTM_UNKNOWN_ADDR;
+   }
+ 
+-  if (!bluetooth::shim::GetController()->SupportsSniffSubrating()) {
++  if (!controller_supports_sniff_subrating()) {
+     log::info("No controller support for sniff subrating");
+     return tBTM_STATUS::BTM_SUCCESS;
+   }
+@@ -535,7 +544,7 @@ static tBTM_STATUS btm_pm_snd_md_req(uint16_t handle, uint8_t pm_id, int link_in
+     log::debug("Need to wake first");
+     md_res.mode = BTM_PM_MD_ACTIVE;
+   } else if (BTM_PM_MD_SNIFF == md_res.mode && p_cb->max_lat) {
+-    if (bluetooth::shim::GetController()->SupportsSniffSubrating()) {
++    if (controller_supports_sniff_subrating()) {
+       log::debug("Sending sniff subrating to controller");
+       send_sniff_subrating(handle, p_cb->bda_, p_cb->max_lat, p_cb->min_rmt_to, p_cb->min_loc_to);
+     }
