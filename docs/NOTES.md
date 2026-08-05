@@ -187,6 +187,47 @@ macro sensors are auxiliary by design, exactly as stock does it.
   [`../patches/livedisplay_sysfs_se_value.patch`](../patches), which adds a
   configurable enable value to the sysfs SunlightEnhancement HAL.
 
+## Audio — one speaker, and why it looks like two
+
+camellia is **mono**: one bottom loudspeaker driven by a single external smart
+amplifier. Bottom-only playback is correct, and matches stock. This gets
+re-investigated because several things in the tree look like evidence of stereo.
+They are not:
+
+- **Two amplifiers are declared** on i2c6 — `aw87559_pa_58@58` (Awinic) and
+  `fs16xx@34` (FourSemi FS1815). They are second-source alternates for one
+  footprint, not a stereo pair. Both carry the **same reset GPIO 139**, with
+  contradictory polarity flags (`<&pio 139 0>` vs `<&pio 139 1>`); two
+  independently controlled amps cannot share a reset line. Only one probes —
+  `/sys/class/huaqin/interface/hw_info/audio_PA` reports which. Xiaomi's
+  changelog comment "bring up second PA" means second *vendor*.
+- **`cust_foursemi.dtsi` declares four amps** with `fsm,position` =
+  `LTOP`/`LBTM`/`RTOP`/`RBTM`. That is a genuine stereo reference layout and it
+  is dead code — no DTS includes it.
+- **The MTK HAL blob contains `dual_speaker_output`** and
+  `headphoneDualSpeaker_output`. Also dead: `audio_device.xml` never defines
+  those paths, so the code has no mixer path to drive. Stock had the same blob
+  and the same absence.
+- **`two_in_one_speaker_output` exists in `audio_device.xml`** with *empty*
+  turnon and turnoff bodies. In MTK terminology "2-in-1 speaker" is one
+  transducer serving as both earpiece and loudspeaker — the opposite of stereo —
+  and here it is a no-op.
+- **The Speaker port declares `AUDIO_CHANNEL_OUT_STEREO`.** That only means the
+  HAL accepts a 2-channel stream. `fs1815n/fsm_core.c:1038` sets `chs12 = 3`
+  (sum L+R) when `dev_count == 1`, so the amp downmixes into its single
+  transducer.
+
+The decisive evidence is upstream of all of it: MT6359 has one loudspeaker
+output, `LINEOUT L`, and no `LINEOUT R` widget exists. `mt6833-mt6359.c` has
+exactly one speaker DAPM widget fed only from `LINEOUT L`, and one
+`Ext_Speaker_Amp Switch`. The earpiece cannot carry media either — `RCV Mux`
+offers only `{Open, Mute, Voice Playback, Test Mode}`.
+
+Routing config is byte-identical to stock (`audio_device.xml`, `audio_em.xml`,
+`audio_policy_volumes.xml`). The DSP layer deliberately differs: Xiaomi's
+`misound` is replaced by `mtk_bessound` and `misoundfx` is dropped, which
+changes tuning, not routing.
+
 ## Multi-variant
 
 LK reads a board-ID ADC and emits `pcba_config`, `androidboot.rsc`,
