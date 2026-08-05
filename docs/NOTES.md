@@ -1,0 +1,230 @@
+# Why this tree looks the way it does
+
+Notes on the non-obvious parts. Everything here was measured on hardware or read
+out of the shipped build, not inferred.
+
+Device: Redmi Note 10 5G / Redmi Note 10T 5G / POCO M3 Pro 5G, MediaTek MT6833
+(Dimensity 700). Kernel 4.14.186, the newest MiCode published for camellia.
+
+## Android 16 on a 4.14 kernel
+
+Android 16 (SDK 36) hard-requires kernel 4.19+ in several places. Left alone
+that produces a silent boot loop with no crash record anywhere, because the
+failure is an *orderly init-requested reboot*, not a panic. Nothing is written
+to pstore, ramoops or expdb.
+
+Android 14 ROMs for this device are unaffected: they are SDK 34 and the checks
+are gated on `isAtLeastV`. Same kernel, different outcome, purely on the SDK
+axis.
+
+The fix lives in [`../patches/connectivity_android16_on_kernel414.patch`](../patches),
+against `packages/modules/Connectivity`:
+
+| File | Change | Why |
+|---|---|---|
+| `bpf/loader/NetBpfLoad.cpp` | V/4.19 and 25Q2/5.4 gates `return 5`/`return 6` -> `ALOGW` | fatal exit + `reboot_on_failure` = boot loop before zygote |
+| `bpf/loader/NetBpfLoad.cpp` | drop `isAtLeastT` from the pre-4.20 BPF-UAPI degradation path | AOSP already implements this fallback for the "Xiaomi S 4.14.180 kernel uapi bug" but gates it to Android S |
+| `bpf/loader/netbpfload.35rc` | comment out `reboot_on_failure` | AOSP's own documented procedure, written in that file under "How to debug bootloops caused by 'bpfloader-failed'" |
+| `bpf/netd/BpfHandler.cpp` | same two gates -> `ALOGW` | `netd` aborted in `libnetd_updatable_init`, respawning every 5s forever |
+| `staticlibs/.../SingleWriterBpfMap.java` | tolerate `ENOTSUPP` when priming the cache; override `clear()` and `forEach()` to use the cache | see below |
+
+LineageOS already applies exactly this treatment to the 25Q4/5.10 gate in
+`NetBpfLoad.cpp`, so the first two changes extend an established in-tree
+pattern.
+
+### The LPM_TRIE problem
+
+`local_net_access_map` is a `BPF_MAP_TYPE_LPM_TRIE`. The kernel only implemented
+`trie_get_next_key` in **4.20**; before that `BPF_MAP_GET_NEXT_KEY` returns the
+kernel-internal `ENOTSUPP` (errno 524). Any code that walks the map therefore
+fails, which crashed `system_server` during `NetworkStatsService` startup:
+
+```
+IllegalStateException: Failed to initialize local_net_access map
+Caused by: ErrnoException: nativeGetNextMapKey failed: errno 524
+```
+
+`SingleWriterBpfMap` holds an exclusive lock and a write-through cache, and is
+by construction the **sole writer** — it already serves `containsKey()` and
+`getValue()` from that cache. The patch extends the same reasoning to the three
+paths that would otherwise ask the kernel to enumerate: constructor cache
+priming, `clear()` and `forEach()`. No behaviour change on kernels that can
+iterate.
+
+`local_net_access_map` is the only LPM_TRIE in the module; every other map
+`BpfNetMaps` opens is HASH or ARRAY, which 4.14 iterates fine.
+
+### Consequence
+
+Per-app firewall and Data Saver are untested and probably degraded: the cgroup
+BPF programs they depend on do not load on 4.14. Ordinary networking, including
+mobile data, is validated end to end.
+
+A stable-patch bump to 4.14.x-openela is the real fix and would likely remove
+most of this. LineageOS ships `davinci` officially on 4.14.357-openela with an
+**unmodified** Connectivity module, which is strong evidence these patches are
+artifacts of the stale 4.14.186 base rather than of 4.14 itself. Android 16's
+framework compatibility matrix wants >= 4.14.336; hence
+`PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false` in
+`lineage_camellia.mk`. Revert all four hunks and retest after any such bump
+before assuming any are still needed.
+
+## Wi-Fi
+
+MiCode never published `vendor/mediatek/kernel_modules`, so the MediaTek
+connectivity drivers ship as stock prebuilts extracted from the device. Proven
+on hardware: they `insmod` cleanly into our self-built 4.14.186 kernel.
+`same_magic()` discards the release string when a module carries a `__versions`
+section, and all 947 modversion CRCs match, so vermagic is a non-issue. Do
+**not** create `.scmversion`.
+
+Load order is orchestrated by the already-shipped `init.connfem.rc` /
+`init.wmt_drv.rc` / `init.bt_drv.rc` against `vendor.connsys.driver.ready`. Do
+**not** add them to a `modules.load`; that would insmod before CONNSYS is
+powered.
+
+Bluetooth, GPS and FM work from the modules alone.
+
+### The actual root cause
+
+**One line in `device.mk`:**
+
+```make
+$(call soong_config_set_bool,mediatek_wifi_hal,use_pre_u_qpr2_struct,true)
+```
+
+LineageOS ships `hardware/mediatek/libwifi-hal-wrapper` specifically to
+translate MediaTek's older `wifi_hal_fn` layout to the one AOSP compiles
+against. Its `Android.bp` selects the older layout from the soong config
+`mediatek_wifi_hal.use_pre_u_qpr2_struct` — and nothing in the tree ever set it.
+The wrapper therefore compiled its "legacy" struct at the Android 16 layout,
+identical to the destination, and the translation degenerated into an identity
+copy that translated nothing.
+
+The blob writes Android-12-era offsets. The drift is piecewise-uniform: +0 slots
+for struct indices 0-26, +2 for 27-28, +4 for 29-106, +12 from 107. Matching the
+blob's 66 written slots against the struct compiled WITH the flag gives 44/44
+symbol matches; without it, 11/44 — exactly the members below the first
+divergence, which is why interface enumeration worked while everything past it
+failed.
+
+Verifiable before flashing, no device needed. `llvm-objdump` the built wrapper:
+the `calloc` in `init_wifi_vendor_hal_func_table` must read `#1088` (136x8), not
+`#1192` (149x8), and the max `ldr` immediate `#1080`, not `#1184`.
+
+Do **not** also set `use_pre_baklava_qpr0_struct`; its `#ifndef` nests inside the
+QPR2 guard, so the single flag already yields the right layout.
+
+`"Can not initialize the vendor function pointer table"` is a **red herring**.
+It comes from `wifi_legacy_hal_factory.cpp:112` on the first statically-linked
+attempt, before the factory falls back to the XML path that loads the wrapper
+successfully. It still appears after the fix, and other working ROMs log it too.
+
+### patchelf version matters
+
+`libwifi-hal-mtk.so` is stock's `libwifi-hal.so` with the soname corrected. The
+patchelf version used to do that changes the outcome:
+
+| patchelf | size | ifaces enumerated |
+|---|---|---|
+| unpatched | 201064 | 3 |
+| 0_9 | 215808 | 3 |
+| 0_18 | 280177 | **0** |
+
+`0_18` restructures the binary enough to break `wifi_get_ifaces()`, and it is
+the extract-utils default. The `FIX_SONAME` flag in `proprietary-files.txt`
+always uses that default, so the fix is done in `extract-files.py` instead with
+an explicit `.patchelf_version('0_9')`.
+
+### Three further defects, all real but downstream of the above
+
+1. **`android.hardware.wifi.aware.xml` and `android.hardware.wifi.rtt.xml` must
+   not be declared.** Stock's vendor ships only `wifi.xml`, `wifi.direct.xml`
+   and `wifi.passpoint.xml`. This chipset supports neither NAN nor 802.11mc
+   ranging; declaring them made the framework allocate a NAN iface, fail, and
+   tear down the whole Wi-Fi stack (`Failed to allocate new Nan iface` ->
+   `Wifi HAL stopped`).
+2. **`configureChip()` reports failure despite succeeding** — see
+   [`../patches/wifi_mtk_configurechip_quirk.patch`](../patches). The vendor HAL
+   configures the chip correctly (wlan0/wlan1/p2p0 handles appear immediately
+   after) but returns false, because Android 16's newer AIDL chip queries return
+   empty on this Android-13-era blob (`chipCapabilities={}`,
+   `radioCombinations=null`). `HalDeviceManager` aborted on that. Made
+   non-fatal.
+3. **Both connsys firmware ASIC-ECO sets must ship.** Stock
+   `/vendor/firmware` carries `soc2_2_ram_{bt,wifi,mcu}_1_1_hdr.bin` *and*
+   `…_1a_1_hdr.bin`, plus both `WIFI_RAM_CODE_soc2_2_*`. The wlan driver builds
+   the filename at runtime from the detected ECO revision, so shipping only one
+   set leaves some units with no Wi-Fi and no Bluetooth.
+
+## Camera
+
+`drivers/misc/mediatek/imgsensor/src/Makefile` gated the sensor table on
+`$(TARGET_PRODUCT)`, an Android build variable that never reaches the kernel
+build — so the gate never matched and the sensor list compiled **empty**. The
+camera service enumerated 0 devices while `camerahalserver` ran happily and all
+492 camera libs were present. Defining `-DTARGET_PRODUCT_CAMELLIA`
+unconditionally restores all 9 sensors, giving 4 camera devices. Fixed in the
+kernel repository.
+
+Only 2 of the 4 are app-visible (`normal camera devices: 2`); the depth and
+macro sensors are auxiliary by design, exactly as stock does it.
+
+## Display
+
+- Manual brightness is byte-identical to stock (`display_id_0.xml`, 400 nit
+  ceiling, backlight 2047/2047). Nothing to fix.
+- **Auto-brightness was broken.** `mBrightnessLevelsNits` was empty, so the
+  framework fell back to `config_autoBrightnessLcdBacklightValues`, which it
+  reads on the legacy **0-255** scale while ours is written for **0-4095**.
+  Everything past the 5th entry clamped to 1.0, pinning the screen to maximum
+  above roughly 10 lux. Fixed by shipping
+  `config_autoBrightnessDisplayValuesNits`.
+- **HBM / LiveDisplay Outdoor mode.** Write **2** or **3** to
+  `/sys/devices/platform/14000000.dispsys_config/mtk_fb_hbm`. Level **1 is the
+  normal operating current** (21.8 mA) and looks like a no-op; 2 = 25 mA,
+  3 = 27.4 mA. Wired up via
+  [`../patches/livedisplay_sysfs_se_value.patch`](../patches), which adds a
+  configurable enable value to the sysfs SunlightEnhancement HAL.
+
+## Multi-variant
+
+LK reads a board-ID ADC and emits `pcba_config`, `androidboot.rsc`,
+`androidboot.hwc` and `androidboot.product.hardware.sku`. The model is a
+function of **(sku, rsc)**, not sku alone — `sku=camellia` covers both
+M2103K19C and M2103K19I. `libinit/` resolves identity from that pair and
+includes a catch-all entry so an unrecognised unit gets sane defaults rather
+than silently reporting the wrong device.
+
+Selection of the actual hardware is runtime and happens below us: panels and
+touch on `LCM_name=`, backlight on `:bklic=`, cameras by I2C ID, and both
+fingerprint drivers self-gate on SPI chip-ID reads with cross-driver exclusion.
+
+NFC is fitted only on `camellian` and `camellianp`. On `camellia` the hardware
+is absent and its absence is correct rather than a fault; the stack ships and is
+gated on the SKU exactly as stock does it.
+
+## Prebuilts
+
+`prebuilt/dtbo.img` and `prebuilt/dtb/camellia.dtb` are byte-identical to
+factory (dtbo md5 `69f38af3796c4b8512eef0aa8910eaeb`; base DTB
+`1d21abde9944861d7dd2fb2d66b24d5d`, taken from the factory boot.img at offset
+34424832). Both are single-entry, so `dtb_idx=0`/`dtbo_idx=0` are the only
+possible values and LK hardcodes `androidboot.dtb_idx=0`. The `.dts` sources for
+the overlay were never published, which is why the binary ships.
+
+## Build notes
+
+```
+lunch lineage_camellia-bp4a-userdebug
+mka bacon
+```
+
+`WITH_ADB_INSECURE=true` is useful while debugging: LineageOS forces
+`ro.debuggable=0` even on userdebug, so without it adb is unavailable until the
+setup wizard completes — which is impossible if the device does not finish
+booting. The shipped release does **not** set it.
+
+Updates are recovery-sideload only. In-system OTA does not fit: VABC is off and
+an uncompressed COW needs roughly 4.84 GB against 4.28 GB free. Recovery
+sideload survives because it sets `delete_source = true`.

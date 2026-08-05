@@ -9,13 +9,14 @@ DEVICE_PATH := device/xiaomi/camellia
 
 BUILD_BROKEN_DUP_RULES := true
 
-# Required only because the seven MediaTek connectivity .ko are shipped as
-# prebuilts through PRODUCT_COPY_FILES, which AOSP rejects for ELF files.
-# Removing this flag fails the build with 18 "found ELF prebuilt in
-# PRODUCT_COPY_FILES" errors. It can go once those modules are built from
-# source (kernel_modules connectivity sources), which also settles the GPL
-# question - shipping GPL .ko as binaries with no source is a rejection in
-# practice, and 10/10 official LineageOS trees ship zero .ko.
+# Required only because the MediaTek kernel modules listed in
+# proprietary-files.txt are extracted as prebuilts and land in
+# PRODUCT_COPY_FILES, which AOSP rejects for ELF files. Removing this flag
+# fails the build with "found ELF prebuilt in PRODUCT_COPY_FILES" errors.
+# It can go once those modules are built from source (the MediaTek
+# kernel_modules connectivity sources), which also settles the GPL question -
+# shipping GPL .ko as binaries with no source is a rejection in practice, and
+# official LineageOS trees ship zero .ko.
 BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
 
 # A/B (matches stock partition layout — boot/system/vendor/product all have slots)
@@ -62,7 +63,8 @@ DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE += \
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
 DEVICE_MATRIX_FILE := $(DEVICE_PATH)/compatibility_matrix.xml
 
-# Kernel (prebuilt — built locally from MiCode camellia-r-oss 4.14.186 via LOS-1)
+# Boot image geometry. The kernel itself is built from source, see
+# TARGET_KERNEL_SOURCE below (4.14.186, MiCode camellian-t-oss).
 BOARD_DTB_OFFSET := 0x07c80000
 BOARD_KERNEL_BASE := 0x40000000
 BOARD_KERNEL_PAGESIZE := 2048

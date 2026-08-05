@@ -4,6 +4,11 @@ These are **not** part of the device tree. They modify repositories the
 LineageOS manifest already provides, so a buildbot build from the stock manifest
 will not have them. Apply before building.
 
+This is the complete set. Verified against the tree that produced the shipped
+release: exactly three repositories are modified, and they are these three.
+Kernel changes are not here — they are commits in
+[android_kernel_xiaomi_camellia](https://github.com/cristidclxvi/android_kernel_xiaomi_camellia).
+
 | Patch | Repository | Why |
 |---|---|---|
 | `connectivity_android16_on_kernel414.patch` | `packages/modules/Connectivity` | Android 16 hard-requires kernel 4.19+ in the BPF loader. On 4.14 the loader exits fatally and `reboot_on_failure` turns that into a silent boot loop with no crash record. Also tolerates `ENOTSUPP` (524) from `BPF_MAP_GET_NEXT_KEY`, which 4.14 returns for LPM_TRIE maps because `trie_get_next_key` only landed in 4.20. |
