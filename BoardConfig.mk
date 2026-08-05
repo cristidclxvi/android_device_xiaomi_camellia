@@ -196,9 +196,13 @@ TARGET_KERNEL_ARCH := arm64
 TARGET_KERNEL_HEADER_ARCH := arm64
 TARGET_KERNEL_CLANG_COMPILE := true
 
-# Pin kernel clang to r383902 (matches what built our LOS-1 kernel cleanly)
+# Pin the kernel toolchain to clang r383902, the version this 4.14 tree was
+# written against. LineageOS's manifest only carries r547379 and newer, which
+# this tree does not build with, so the toolchain is fetched separately from
+# AOSP's Android 12 branch. See the local manifest in README.md. This checkout
+# is used for the kernel only; the platform still builds with LineageOS clang.
 TARGET_KERNEL_CLANG_VERSION := r383902
-TARGET_KERNEL_CLANG_PATH := $(abspath prebuilts/clang/host/linux-x86/clang-r383902)
+TARGET_KERNEL_CLANG_PATH := $(abspath prebuilts/clang/host/linux-x86-r383902/clang-r383902)
 
 
 

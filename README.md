@@ -89,7 +89,23 @@ Save this as `.repo/local_manifests/camellia.xml` in a `lineage-23.2` tree:
            path="hardware/mediatek" remote="github" />
   <project name="LineageOS/android_hardware_xiaomi"
            path="hardware/xiaomi" remote="github" />
+
+  <!-- Kernel toolchain. LineageOS ships clang r547379 and newer; this 4.14
+       tree needs r383902, which AOSP keeps only on its Android 12 branches. -->
+  <project name="platform/prebuilts/clang/host/linux-x86"
+           path="prebuilts/clang/host/linux-x86-r383902"
+           remote="aosp" revision="refs/tags/android-12.1.0_r27"
+           clone-depth="1" />
 </manifest>
+```
+
+That branch of the toolchain also carries an `Android.mk` which the current
+build system refuses to see under `prebuilts/`, and which would pull in test
+binaries this tree does not ship. Nothing in it is meant to be built, so mark
+the directory once after syncing:
+
+```
+touch prebuilts/clang/host/linux-x86-r383902/.find-ignore
 ```
 
 Apply the patches in [`patches/`](patches). They change repositories the
@@ -104,6 +120,12 @@ mka bacon
 Proprietary blobs are not included. Extract them from a device running stock
 MIUI 14 V14.0.6.0 with `./extract-files.py`.
 
+A build from these repositories is functionally identical to a release but not
+bit-identical. `CONFIG_LTO_CLANG` and `CONFIG_CFI_CLANG` make the kernel
+non-deterministic, the build date and version strings are baked into the system
+properties, and released images are signed with a private release key that is
+not published, so your own build gets whichever keys you sign it with.
+
 ## Related
 
 - Kernel: [android_kernel_xiaomi_camellia](https://github.com/cristidclxvi/android_kernel_xiaomi_camellia) — 4.14.186, branch `lineage-23.2`
@@ -111,7 +133,7 @@ MIUI 14 V14.0.6.0 with `./extract-files.py`.
 The kernel branch is based directly on MiCode's `camellian-t-oss` commit, so the
 MediaTek and Xiaomi history is intact and
 `git diff f4e416aea06c..lineage-23.2` shows every change made for this device —
-nine files.
+ten files.
 
 ## License
 
