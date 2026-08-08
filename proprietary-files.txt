@@ -277,7 +277,7 @@ vendor/lib64/libbluetooth_mtk_pure.so
 vendor/lib64/libbt-vendor.so
 
 # Bluetooth (firmware) - from gold
-vendor/firmware/soc2_2_ram_bt_1_1_hdr.bin|7c1f091e8afddaf6d8df19146c277a550ab5ebb9
+vendor/firmware/soc2_2_ram_bt_1_1_hdr.bin|bcc3697ae5277b9761dbab665bb511f1e06ea2e1
 vendor/firmware/soc2_2_ram_bt_1a_1_hdr.bin|9dd6783981c3d9d47457a5f44dd19a75f4ea8a23
 
 # Bluetooth (A2DP)
@@ -913,7 +913,7 @@ vendor/firmware/WMT_SOC.cfg
 vendor/firmware/txpowerctrl.cfg
 
 # Connectivity (Firmware) - from gold
-vendor/firmware/soc2_2_ram_mcu_1_1_hdr.bin|2a13e989871b6d8e46131f7e058bc74081497e63
+vendor/firmware/soc2_2_ram_mcu_1_1_hdr.bin|f79b7e31e0d19efc2d63daa9060cb742fdb2950b
 vendor/firmware/soc2_2_ram_mcu_1a_1_hdr.bin|d149d1555bf86a09b27a3ef1a3d537836657e231
 
 # Chipinfo
@@ -1315,9 +1315,9 @@ vendor/firmware/wifi.cfg
 vendor/lib64/libwifi-hal.so:vendor/lib64/libwifi-hal-mtk.so
 
 # Wi-Fi (firmware) - from gold
-vendor/firmware/WIFI_RAM_CODE_soc2_2_1_1.bin|e4d3097818eca0b722d3525efcbe96b462dea636
+vendor/firmware/WIFI_RAM_CODE_soc2_2_1_1.bin|582f6ffc5520e6dee4851bc402ce7dbb3aeb6233
 vendor/firmware/WIFI_RAM_CODE_soc2_2_1a_1.bin|d075fe5331a40a44dd1cf4731e0581f184592214
-vendor/firmware/soc2_2_ram_wifi_1_1_hdr.bin|d0be6f604ace05053743b0226ba96f3be4785035
+vendor/firmware/soc2_2_ram_wifi_1_1_hdr.bin|c12e1173e987fa8e47bd554b371026cfb25223cd
 vendor/firmware/soc2_2_ram_wifi_1a_1_hdr.bin|de6378eaf7c611ca34fe0b342a44724d1fb55911
 
 # Connectivity kernel modules
