@@ -11,3 +11,25 @@ persist.dbg.wfc_avail_ovr=1
 
 # Zygote
 zygote.critical_window.minute=10
+
+# FM radio
+# The FMRadio JNI reads its whole tuner config from these and defaults every
+# one to 0, so without them FMR_pwr_up() rejects any frequency as out of band
+# and the app reports the radio as unavailable. Stock is unaffected because it
+# ships MediaTek's own FM app and blob, which do not use these.
+ro.fm.chip=0x6631
+ro.fm.band=1
+ro.fm.low_band=875
+ro.fm.high_band=1080
+ro.fm.seek_space=1
+ro.fm.max_scan_num=40
+ro.fm.seek_lev=4
+ro.fm.scan_sort=0
+ro.fm.short_ana_sup=1
+ro.fm.rssi_th_l2=-102
+ro.fm.noise_floor_detect=true
+ro.fm.fake_chans=4
+ro.fm.fake_chan_0=9210 -205
+ro.fm.fake_chan_1=9600 -152
+ro.fm.fake_chan_2=10400 -152
+ro.fm.fake_chan_3=10750 -205

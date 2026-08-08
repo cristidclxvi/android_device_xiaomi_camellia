@@ -1,0 +1,23 @@
+diff --git a/Tethering/src/com/android/networkstack/tethering/Tethering.java b/Tethering/src/com/android/networkstack/tethering/Tethering.java
+--- a/Tethering/src/com/android/networkstack/tethering/Tethering.java
++++ b/Tethering/src/com/android/networkstack/tethering/Tethering.java
+@@ -2187,10 +2187,16 @@
+                         "SET DNS forwarders: network=%s dnsServers=%s",
+                         network, Arrays.toString(dnsServers)));
+             } catch (RemoteException | ServiceSpecificException e) {
+-                // TODO: Investigate how this can fail and what exactly
+-                // happens if/when such failures occur.
++                // Log and carry on rather than tearing tethering down. Where
++                // netd cannot start the legacy dnsmasq DNS proxy, every write
++                // to it fails with EREMOTEIO as soon as an upstream appears,
++                // and entering the error state stops forwarding and drops the
++                // SoftAP - so the hotspot dies the instant mobile data comes
++                // up. Losing DNS forwarding degrades name resolution for
++                // tethered clients; it should not kill the downstream. The
++                // IPv6 equivalent, IpServer.sendInterfaceParams(), already
++                // only logs the same failure.
+                 mLog.e("setting DNS forwarders failed, " + e);
+-                transitionTo(mSetDnsForwardersErrorState);
+             }
+         }
+ 
