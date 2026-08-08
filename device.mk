@@ -217,8 +217,14 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/configs/powerhint.json:$(TARGET_COPY_OUT_VENDOR)/etc/powerhint.json
 
 # Power Off Alarm
-PRODUCT_PACKAGES += \
-#    PowerOffAlarm
+#
+# NOT SHIPPED. hardware/mediatek/packages/PowerOffAlarm exists and builds,
+# but it is the QTI app (com.qualcomm.qti.poweroffalarm) driving /dev/alarm
+# and /dev/rtc0, we carry no sepolicy for it, and it has never been tested
+# on camellia. Stock MIUI does ring alarms while powered off, so this is a
+# real parity gap - it needs the package, the sepolicy and a device test
+# together, not just the line below.
+# PRODUCT_PACKAGES += PowerOffAlarm
 
 # Properties
 include $(LOCAL_PATH)/vendor_logtag.mk

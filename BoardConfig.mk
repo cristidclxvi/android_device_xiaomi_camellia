@@ -182,6 +182,17 @@ BOARD_AVB_VBMETA_VENDOR_ROLLBACK_INDEX_LOCATION := 3
 # Wi-Fi (MTK MT6631 connectivity chip via /dev/wmtWifi)
 BOARD_HOSTAPD_DRIVER := NL80211
 BOARD_WPA_SUPPLICANT_DRIVER := NL80211
+
+# Do not set BOARD_WLAN_DEVICE here. hostapd's built-in ACS needs
+# dump_survey, which gen4m does not implement; hotspot channel selection
+# only works because the driver registers the QCA DO_ACS vendor command and
+# hostapd is built with CONFIG_DRIVER_NL80211_QCA, which soong enables only
+# while BOARD_WLAN_DEVICE is unset. Setting it silently breaks ACS.
+#
+# BOARD_WPA_SUPPLICANT_PRIVATE_LIB is also deliberately unset - see
+# patches/wifi_countrycode_chip_fallback.patch. lib_driver_cmd_fallback
+# would make every driver_cmd return success without doing anything, which
+# is worse than the honest failure we handle in the framework.
 WIFI_DRIVER_FW_PATH_PARAM := "/dev/wmtWifi"
 WIFI_DRIVER_FW_PATH_STA := "STA"
 WIFI_DRIVER_FW_PATH_AP := "AP"

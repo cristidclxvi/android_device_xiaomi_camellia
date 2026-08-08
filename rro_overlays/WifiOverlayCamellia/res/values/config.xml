@@ -24,15 +24,12 @@
          range string like '1-6,11'. -->
     <string translatable="false" name="config_wifiSoftap2gChannelList">1-13</string>
 
-    <!-- List of allowed channels in 5GHz band for softap. If the device doesn't want to restrict
-         channels this should be empty. Values is a comma separated channel string and/or channel
-         range string like '36-48,149'. -->
-    <string translatable="false" name="config_wifiSoftap5gChannelList">36,38,40,42,44,46,48,149,153,157,161,165</string>
-
-    <!-- List of allowed channels in 6GHz band for softap. If the device doesn't want to restrict
-         channels this should be empty. Values is a comma separated channel string and/or channel
-         range string like '36-48,149'. -->
-    <string translatable="false" name="config_wifiSoftap6gChannelList">5,21,37,53,69,85,101,117,133,149,165,181,197,213,229</string>
+    <!-- 5GHz and 6GHz SoftAP channel lists are deliberately not overridden.
+         The old 5GHz list pinned 38/42/46, which are 40MHz centre channels and
+         not selectable control channels, and it hid part of the band on the
+         SKUs that allow it. Empty (the default) means "whatever the regulatory
+         domain permits", which is what a five-SKU global device wants. There is
+         no 6GHz radio here at all - this is 1x1 Wi-Fi 5. -->
 
     <!-- Wifi driver supports Automatic channel selection (ACS) for softap -->
     <bool translatable="false" name="config_wifi_softap_acs_supported">true</bool>

@@ -1,0 +1,27 @@
+diff --git a/service/java/com/android/server/wifi/WifiCountryCode.java b/service/java/com/android/server/wifi/WifiCountryCode.java
+index fc76ac3e02..86f2766302 100644
+--- a/service/java/com/android/server/wifi/WifiCountryCode.java
++++ b/service/java/com/android/server/wifi/WifiCountryCode.java
+@@ -700,6 +700,22 @@ public class WifiCountryCode {
+                 if (!cm.setCountryCode(country)) {
+                     Log.d(TAG, "Failed to set country code (ConcreteClientModeManager) to "
+                             + country);
++                    // ConcreteClientModeManager goes through wpa_supplicant, which reaches
++                    // the driver with a vendor driver_cmd. A build without
++                    // BOARD_WPA_SUPPLICANT_PRIVATE_LIB has that compiled out entirely
++                    // (-DANDROID_LIB_STUB leaves .driver_cmd NULL), so the call can never
++                    // succeed and the radio keeps the worldwide TX power table. Fall back
++                    // to the chip-level vendor HAL, which programs the driver directly and
++                    // is what SoftAP start already uses successfully. Also fires
++                    // onSetCountryCodeSucceeded, so mDriverCountryCode and the channel
++                    // lists stay consistent.
++                    if (mWifiNative.setChipCountryCode(country)) {
++                        Log.i(TAG, "Set country code to " + country
++                                + " via the chip-level HAL instead");
++                        isConcreteClientModeManagerUpdated = true;
++                        anyAmmConfigured = true;
++                        mIsCountryCodePendingToUpdateToCmm = false;
++                    }
+                 } else {
+                     isConcreteClientModeManagerUpdated = true;
+                     anyAmmConfigured = true;
