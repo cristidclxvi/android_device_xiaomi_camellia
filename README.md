@@ -56,7 +56,7 @@ this device.
 | | |
 |---|---|
 | Boot, telephony, 5G, mobile data, SMS | works |
-| VoLTE | **not working** - calls fall back to GSM (CSFB) |
+| VoLTE | works |
 | Wi-Fi 2.4/5 GHz, Bluetooth, GPS, FM radio | works |
 | Cameras, main and front | works |
 | Depth and macro sensors | auxiliary, not app-visible, same as stock |
