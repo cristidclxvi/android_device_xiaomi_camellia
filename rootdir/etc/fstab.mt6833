@@ -101,4 +101,8 @@ product                              /product                  ext4     ro      
 /dev/block/by-name/seccfg            /seccfg                   emmc     defaults             defaults
 
 # ZRAM
-/dev/block/zram0                     none                      swap     defaults             zramsize=50%,zram_backingdev_size=1G
+# No zram_backingdev_size: CONFIG_ZRAM_WRITEBACK is not set in this kernel
+# (nor in the stock defconfig), so backing_dev never appears and fs_mgr was
+# allocating a 1 GiB file at /data/per_boot/zram_swap every boot only to
+# throw it away.
+/dev/block/zram0                     none                      swap     defaults             zramsize=50%

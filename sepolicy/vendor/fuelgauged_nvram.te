@@ -1,0 +1,5 @@
+# fuelgauged_nvram calls read_fstab(), and libfstab probes the deprecated
+# device-tree fstab before falling back to /vendor/etc/fstab.mt6833, which
+# is the only fstab this device has. AOSP dontaudits the same probe for
+# kcmdlinectrl, misctrl, mtectrl and vendor_misc_writer.
+dontaudit fuelgauged_nvram sysfs_dt_firmware_android:dir search;

@@ -8,3 +8,9 @@ allow hal_fingerprint_default sysfs_pmu:dir { search };
 allow hal_fingerprint_default sysfs_pmu:file r_file_perms;
 
 set_prop(hal_fingerprint_default, vendor_fingerprint_prop)
+
+# The shared HAL probes the FPC sensor before falling through to our
+# Goodix one, and that probe walks the platform-device tree, tripping
+# over trusty's children. Nothing is lost by refusing; the real TEE
+# channel is /dev/teei_fp, already allowed upstream.
+dontaudit hal_fingerprint_default mtee_trusty_file:dir search;

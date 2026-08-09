@@ -11,3 +11,9 @@ allow mtk_hal_camera vendor_camera_data_file:dir create_dir_perms;
 
 get_prop(mtk_hal_camera, vendor_camera_prop)
 set_prop(mtk_hal_camera, vendor_camera_prop)
+
+# libmtkcam_metastore reads ro.miui.build.region at camera enumeration.
+# It matches nothing in property_contexts so it resolves to default_prop,
+# which AOSP neverallows non-coredomain from reading. We never set that
+# property, so a denied read and an unset read return the same value.
+dontaudit mtk_hal_camera default_prop:file read;

@@ -1,2 +1,18 @@
 rw_dir_file(vendor_init, sysfs_leds)
 rw_dir_file(vendor_init, sysfs_ged)
+
+# The modem File Service Daemon inside ccci_mdinit hard-codes ten host
+# roots; the tenth is /data/vendor_de/md, created by init.cccimdinit.rc.
+# Android 14 split /data/vendor_de off as vendor_userdir_file and limited
+# directory creation there to vold, so on Android 16 the directory never
+# appears and every FSD operation rooted there fails. Stock MIUI 14, which
+# these blobs were built for, labelled the tree vendor_data_file and the
+# mkdir succeeded.
+#
+# data_between_core_and_vendor_violators is AOSP's designated exemption
+# for exactly this class of pre-14 vendor code; it only lifts the
+# compile-time neverallow and grants nothing on its own. The allow below
+# is the whole runtime widening - create, not delete. The contents are
+# already labelled and covered by the MediaTek policy.
+typeattribute vendor_init data_between_core_and_vendor_violators;
+allow vendor_init vendor_userdir_file:dir { write add_name };
