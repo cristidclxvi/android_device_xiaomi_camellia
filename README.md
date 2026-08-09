@@ -64,7 +64,9 @@ this device.
 | 90 Hz display, touch, auto-brightness | works |
 | LiveDisplay including Outdoor mode | works |
 | NFC (`camellian` / `camellianp` only) | untested; hardware absent on other SKUs |
-| Per-app firewall, Data Saver | untested |
+| Per-app firewall, Data Saver | works |
+| Wi-Fi hotspot including tethered DNS | works |
+| 32-bit apps (`armeabi-v7a`) | works |
 
 Built `userdebug`, but not a debuggable build: `ro.debuggable=0`, `ro.secure=1`,
 `ro.build.tags=release-keys`. `boot` and `vbmeta` are signed with a test key, so
