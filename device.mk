@@ -343,7 +343,12 @@ PRODUCT_COPY_FILES += \
     $(call find-copy-subdir-files,*,$(LOCAL_PATH)/configs/wifi/,$(TARGET_COPY_OUT_VENDOR)/etc/wifi)
 
 # Inherit the proprietary files
-# $(call inherit-product, vendor/mediatek/ims/ims.mk)  # TODO: missing dependency, skip for first build
+#
+# MediaTek IMS. Without this nothing binds the IRadio/imsAospSlot1|2
+# instances the MTK RIL registers, no ImsService exists, and every call
+# drops LTE->GSM (CSFB) instead of using VoLTE. Measured 2026-08-09.
+# The APK is re-signed with our platform key at build time.
+$(call inherit-product, vendor/mediatek/ims/ims.mk)
 $(call inherit-product, vendor/xiaomi/camellia/camellia-vendor.mk)
 
 # The MediaTek gadget rc (hardware/mediatek/aidl/gadget/init.mediatek.usb.rc,
