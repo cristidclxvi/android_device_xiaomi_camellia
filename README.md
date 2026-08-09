@@ -91,6 +91,15 @@ Save this as `.repo/local_manifests/camellia.xml` in a `lineage-23.2` tree:
   <project name="LineageOS/android_hardware_xiaomi"
            path="hardware/xiaomi" remote="github" />
 
+  <!-- MediaTek IMS. Provides com.mediatek.ims, which binds the
+       IRadio/imsAospSlot1|2 instances the MTK RIL registers. Without it no
+       ImsService is bound and calls fall back to GSM instead of using VoLTE.
+       Pinned to a SHA on purpose: the payload is a prebuilt APK that gets our
+       platform signature, so it must not change under us. -->
+  <project name="cristidclxvi/android_vendor_mediatek_ims"
+           path="vendor/mediatek/ims" remote="github"
+           revision="32a265afc6a297b20e8c8a4c870133de0e188884" />
+
   <!-- Kernel toolchain. LineageOS ships clang r547379 and newer; this 4.14
        tree needs r383902, which AOSP keeps only on its Android 12 branches. -->
   <project name="platform/prebuilts/clang/host/linux-x86"
