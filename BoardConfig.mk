@@ -44,8 +44,12 @@ TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_ABI2 := armeabi
 TARGET_2ND_CPU_VARIANT := cortex-a55
 
-# 64-bit-only zygote + media stack
-ZYGOTE_FORCE_64 := true
+# Dynamic 64/32 media stack. With ro.zygote=zygote64_32 the dynamic
+# mediaserver/drmserver importers select the 32-bit variants, as stock does.
+#
+# ZYGOTE_FORCE_64 must stay unset: it would force ro.zygote=zygote64 and
+# publish an empty abilist32, which is exactly the 32-bit lockout being
+# removed here.
 TARGET_DYNAMIC_64_32_MEDIASERVER := true
 TARGET_DYNAMIC_64_32_DRMSERVER := true
 

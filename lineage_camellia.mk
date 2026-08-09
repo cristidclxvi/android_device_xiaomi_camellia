@@ -6,7 +6,20 @@
 #
 
 # Inherit from those products. Most specific first.
-$(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit_only.mk)
+# core_64_bit.mk, not core_64_bit_only.mk: a 64-bit primary zygote with a
+# 32-bit secondary, matching stock's ro.zygote=zygote64_32, so armeabi-v7a
+# apps install and run. core_64_bit_only.mk set TARGET_SUPPORTS_32_BIT_APPS
+# to false, which emptied TARGET_CPU_ABI_LIST_32_BIT and left the ROM
+# arm64-only.
+#
+# core_64_bit_only.mk also set TARGET_SUPPORTS_OMX_SERVICE := false and
+# core_64_bit.mk does not, so set it here or base_vendor.mk pulls in an OMX
+# HAL we do not ship. It has to be before the inherit chain reaches
+# base_vendor.mk, which is why it lives in the product makefile and not in
+# BoardConfig.mk.
+TARGET_SUPPORTS_OMX_SERVICE := false
+
+$(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 
 # Inherit from device makefile.
