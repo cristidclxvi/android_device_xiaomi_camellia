@@ -55,7 +55,8 @@ this device.
 
 | | |
 |---|---|
-| Boot, telephony, 5G, VoLTE, mobile data | works |
+| Boot, telephony, 5G, mobile data, SMS | works |
+| VoLTE | **not working** - calls fall back to GSM (CSFB) |
 | Wi-Fi 2.4/5 GHz, Bluetooth, GPS, FM radio | works |
 | Cameras, main and front | works |
 | Depth and macro sensors | auxiliary, not app-visible, same as stock |
@@ -63,7 +64,7 @@ this device.
 | 90 Hz display, touch, auto-brightness | works |
 | LiveDisplay including Outdoor mode | works |
 | NFC (`camellian` / `camellianp` only) | untested; hardware absent on other SKUs |
-| Per-app firewall, Data Saver | untested; cgroup BPF does not load on 4.14 |
+| Per-app firewall, Data Saver | untested |
 
 Built `userdebug`, but not a debuggable build: `ro.debuggable=0`, `ro.secure=1`,
 `ro.build.tags=release-keys`. `boot` and `vbmeta` are signed with a test key, so

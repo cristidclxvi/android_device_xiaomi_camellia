@@ -19,10 +19,15 @@
          capability can provide power savings when wifi needs to be always kept on. -->
     <bool translatable="false" name="config_wifi_background_scan_support">true</bool>
 
-    <!-- List of allowed channels in 2GHz band for softap. If the device doesn't want to restrict
-         channels this should be empty. Values is a comma separated channel string and/or channel
-         range string like '1-6,11'. -->
-    <string translatable="false" name="config_wifiSoftap2gChannelList">1-13</string>
+    <!-- Allowed 2.4GHz SoftAP channels. Deliberately 1-11, not 1-13.
+         12 and 13 are legal in several of our SKUs' regions, and once the
+         country code actually reaches the driver ACS will happily pick 12 -
+         but clients sold in regions capped at 11 then cannot see the AP at
+         all. Measured 2026-08-09: ACS chose channel 12 and a second phone
+         could not find the network; forcing 2437 (ch 6) made it appear
+         immediately. Two channels of spectrum are worth less than a hotspot
+         every device can join. -->
+    <string translatable="false" name="config_wifiSoftap2gChannelList">1-11</string>
 
     <!-- 5GHz and 6GHz SoftAP channel lists are deliberately not overridden.
          The old 5GHz list pinned 38/42/46, which are 40MHz centre channels and
