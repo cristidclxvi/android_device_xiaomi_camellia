@@ -43,10 +43,56 @@ index 8fe151f..5c314e5 100644
          any @ flag_val: ["-DSRE_PATH=\"" + flag_val + "\""],
          default: [],
 diff --git a/livedisplay/aidl/sysfs/SunlightEnhancement.cpp b/livedisplay/aidl/sysfs/SunlightEnhancement.cpp
-index 84eb888..9afd935 100644
+index 84eb888..c101011 100644
 --- a/livedisplay/aidl/sysfs/SunlightEnhancement.cpp
 +++ b/livedisplay/aidl/sysfs/SunlightEnhancement.cpp
-@@ -68,7 +68,16 @@ ndk::ScopedAStatus SunlightEnhancement::getEnabled(bool* _aidl_return) {
+@@ -9,8 +9,10 @@
+ 
+ #include <android-base/file.h>
+ #include <android-base/logging.h>
++#include <android-base/parseint.h>
+ #include <android-base/strings.h>
+ 
++using ::android::base::ParseInt;
+ using ::android::base::ReadFileToString;
+ using ::android::base::Trim;
+ using ::android::base::WriteStringToFile;
+@@ -63,12 +65,50 @@ ndk::ScopedAStatus SunlightEnhancement::getEnabled(bool* _aidl_return) {
+         return ndk::ScopedAStatus::fromExceptionCode(EX_SERVICE_SPECIFIC);
+     }
+ 
+-    *_aidl_return = std::stoi(Trim(tmp)) > 0;
++    // Not every panel reports a bare integer. camellia's MT6833 dispsys node
++    // answers "hbm_mode:1", and std::stoi() throws std::invalid_argument on
++    // that. An uncaught exception in a HAL aborts the process, so a dumpsys of
++    // this service - and therefore every bugreport - took the LiveDisplay HAL
++    // down with it. Accept a "key:value" form by reading the digits after the
++    // last ':', and never let a parse failure escape as an exception.
++    std::string value = Trim(tmp);
++    const auto separator = value.find_last_of(':');
++    if (separator != std::string::npos) {
++        value = Trim(value.substr(separator + 1));
++    }
++
++    int level = 0;
++    if (!ParseInt(value, &level)) {
++        LOG(ERROR) << "Unparseable SunlightEnhancement value: " << Trim(tmp);
++        *_aidl_return = false;
++        return ndk::ScopedAStatus::fromExceptionCode(EX_SERVICE_SPECIFIC);
++    }
++
++    // "> 0" is wrong on panels whose off state is not 0. camellia's
++    // mtkfb_set_hbm() clamps anything below HBM_MODE_DEFAULT up to 1, so the
++    // node never reads back 0 and level 1 is the *normal* backlight current,
++    // i.e. off. Compare against the level this device actually writes to
++    // enable, so getEnabled() agrees with setEnabled() instead of always
++    // reporting true.
++#ifdef SE_ENABLED_VALUE
++    *_aidl_return = level >= SE_ENABLED_VALUE;
++#else
++    *_aidl_return = level > 0;
++#endif
+     return ndk::ScopedAStatus::ok();
  }
  
  ndk::ScopedAStatus SunlightEnhancement::setEnabled(bool enabled) {
