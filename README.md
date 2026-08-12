@@ -86,6 +86,8 @@ Save this as `.repo/local_manifests/camellia.xml` in a `lineage-23.2` tree:
            path="device/xiaomi/camellia" remote="github" revision="lineage-23.2" />
   <project name="cristidclxvi/android_kernel_xiaomi_camellia"
            path="kernel/xiaomi/camellia" remote="github" revision="lineage-23.2" />
+  <project name="cristidclxvi/android_kernel_modules_xiaomi_camellia"
+           path="kernel/xiaomi/vendor" remote="github" revision="lineage-23.2" />
   <project name="LineageOS/android_device_mediatek_sepolicy_vndr"
            path="device/mediatek/sepolicy_vndr" remote="github" />
   <project name="LineageOS/android_hardware_mediatek"

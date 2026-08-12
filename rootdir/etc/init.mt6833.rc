@@ -869,7 +869,6 @@ on property:vendor.mtk.md1.status=reset
 
 # FPSGO FBT Game
 on boot
-    insmod /vendor/lib/modules/fpsgo.ko
 
 # add this link for cust mount
 on init

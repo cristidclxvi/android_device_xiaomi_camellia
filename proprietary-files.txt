@@ -1359,14 +1359,8 @@ vendor/firmware/WIFI_RAM_CODE_soc2_2_1a_1.bin|d075fe5331a40a44dd1cf4731e0581f184
 vendor/firmware/soc2_2_ram_wifi_1_1_hdr.bin|c12e1173e987fa8e47bd554b371026cfb25223cd
 vendor/firmware/soc2_2_ram_wifi_1a_1_hdr.bin|de6378eaf7c611ca34fe0b342a44724d1fb55911
 
-# Connectivity kernel modules
-vendor/lib/modules/connfem.ko
-vendor/lib/modules/wmt_drv.ko
-vendor/lib/modules/wmt_chrdev_wifi.ko
-vendor/lib/modules/wlan_drv_gen4m.ko
-vendor/lib/modules/bt_drv_connac1x.ko
-vendor/lib/modules/gps_drv.ko
-vendor/lib/modules/fmradio_drv_mt6631_6635.ko
-
-# FPSGO - insmod'd unconditionally by init.mt6833.rc on boot
-vendor/lib/modules/fpsgo.ko
+# Connectivity kernel modules are no longer extracted. They are built from
+# source via TARGET_KERNEL_EXT_MODULES in BoardConfig.mk. fpsgo.ko is dropped
+# entirely: it has no public source, and it was inert on this build anyway -
+# no MediaTek perf daemon exists in our vendor set to drive it, so its XGF and
+# FSTB tracking lists were always empty.

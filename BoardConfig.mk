@@ -9,15 +9,6 @@ DEVICE_PATH := device/xiaomi/camellia
 
 BUILD_BROKEN_DUP_RULES := true
 
-# Required only because the MediaTek kernel modules listed in
-# proprietary-files.txt are extracted as prebuilts and land in
-# PRODUCT_COPY_FILES, which AOSP rejects for ELF files. Removing this flag
-# fails the build with "found ELF prebuilt in PRODUCT_COPY_FILES" errors.
-# It can go once those modules are built from source (the MediaTek
-# kernel_modules connectivity sources), which also settles the GPL question -
-# shipping GPL .ko as binaries with no source is a rejection in practice, and
-# official LineageOS trees ship zero .ko.
-BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
 
 # A/B (matches stock partition layout — boot/system/vendor/product all have slots)
 AB_OTA_UPDATER := true
@@ -218,6 +209,36 @@ TARGET_KERNEL_CLANG_COMPILE := true
 # is used for the kernel only; the platform still builds with LineageOS clang.
 TARGET_KERNEL_CLANG_VERSION := r383902
 TARGET_KERNEL_CLANG_PATH := $(abspath prebuilts/clang/host/linux-x86-r383902/clang-r383902)
+
+# Connectivity drivers are built from source rather than shipped as prebuilt
+# .ko. Entries are relative to TARGET_KERNEL_EXT_MODULE_ROOT and are built in
+# list order, which matters: gen4m, bt, gps and fmradio all import symbols from
+# wmt_drv (connectivity/common), and gen4m additionally from wmt_chrdev_wifi
+# (wlan/adaptor). ":kbuild" selects make-kbuild-module-target, i.e. a plain
+# "make -C $(KERNEL_SRC) M=<dir>" - these modules have no standalone toolchain.
+TARGET_KERNEL_EXT_MODULE_ROOT := kernel/xiaomi/vendor/mediatek/kernel_modules/connectivity
+TARGET_KERNEL_EXT_MODULES := \
+    common:kbuild \
+    connfem:kbuild \
+    wlan/adaptor:kbuild \
+    wlan/core/gen4m:kbuild \
+    bt/mt66xx/wmt:kbuild \
+    gps:kbuild \
+    fmradio/Build/mt6631_6635:kbuild
+
+# Shared configuration for the above. Anything per-module - MODULE_NAME,
+# BT_PLATFORM, CFG_FM_PLAT and the KBUILD_EXTRA_SYMBOLS paths - is set inside
+# each module Makefile instead, because the ext-module macro passes no
+# per-module flags and these values differ per driver.
+TARGET_KERNEL_ADDITIONAL_FLAGS += \
+    MTK_COMBO_CHIP=SOC2_1X1 \
+    CONNAC_VER=1_0 \
+    WLAN_CHIP_ID=6833 \
+    MTK_ANDROID_WMT=y \
+    MTK_ANDROID_EMI=y \
+    CONFIG_MTK_COMBO_WIFI_HIF=axi \
+    WIFI_IP_SET=1 \
+    MTK_WLAN_SERVICE_PATH=wlan_service/
 
 
 
