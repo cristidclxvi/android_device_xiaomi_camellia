@@ -37,20 +37,6 @@ PRODUCT_MODEL := M2103K19C
 
 PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
 
-# Build fingerprint mirrors stock vendor.img build.prop (extracted from MIUI 14.0.6 V14.0.6.0.TKSMIXM)
-# so vendor blobs find expected props at runtime.
-# Android 16's framework compatibility matrix (kernel FCM version 6) requires a
-# minimum kernel of 4.14.336. We ship 4.14.186 - the newest MiCode published for
-# camellia - so check_vintf fails without this. Measured, not guessed: removing
-# this flag produces
-#   "No compatible kernel requirement found (kernel FCM version = 6) ...
-#    compatible kernel versions are: Minimum LTS: 4.14.336"
-#
-# This is the single strongest argument for bumping to 4.14.x-openela: LineageOS
-# ships davinci officially on 4.14.357-openela, which clears the bar. That bump
-# would let this flag go AND likely delete the Connectivity BPF patches, since
-# davinci runs an unmodified Connectivity module.
-PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
 
 PRODUCT_BUILD_PROP_OVERRIDES += \
     BuildDesc="camellia-user 13 TP1A.220624.014 V14.0.6.0.TKSMIXM release-keys" \
@@ -58,9 +44,34 @@ PRODUCT_BUILD_PROP_OVERRIDES += \
     DeviceProduct=$(PRODUCT_DEVICE)
 
 
-# The 4.14 kernel has no CONFIG_USERFAULTFD, so the userfaultfd GC cannot run.
-# Left at "default" the build cannot detect the kernel version (VINTF kernel
-# requirements are disabled above) and assumes true, which compiles the whole
-# boot classpath without read barriers. ART then rejects its own boot image at
-# runtime and odrefresh has to recompile everything before zygote can start.
+# Android 16's compatibility matrix (kernel FCM version 6) cannot be satisfied
+# by any 4.14 kernel, so OTA kernel-requirement enforcement stays off.
+#
+# The LTS floor is no longer the problem - that was "Minimum LTS: 4.14.336" and
+# this tree now runs 4.14.357-openela. What blocks it is the config list. Two
+# rounds of enabling what check_vintf asked for got as far as:
+#
+#   CONFIG_SONY_FF        - added, kept (HID_SONY was already =y)
+#   CONFIG_TRACE_GPU_MEM  - added, kept; it is a promptless bool, so it cannot
+#                           come from a defconfig and is selected by
+#                           MTK_GPU_SUPPORT instead, the way the GPU driver
+#                           selects it upstream
+#   CONFIG_HAVE_MOVE_PMD  - does not exist anywhere in 4.14
+#   CONFIG_HAVE_MOVE_PUD  - does not exist anywhere in 4.14
+#   CONFIG_USERFAULTFD    - exists, deliberately off; see PRODUCT_ENABLE_UFFD_GC
+#                           below. ART's userfaultfd GC needs 5.x features this
+#                           kernel does not have, so enabling the symbol alone
+#                           would make things worse, not better.
+#
+# The last three would mean backporting 5.x mremap work for a check that only
+# gates OTA metadata. Not worth it. The two configs above were kept anyway
+# because they are genuine and cost nothing.
+PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false
+
+# This kernel is built without CONFIG_USERFAULTFD, so the userfaultfd GC
+# cannot run. Left at "default" the build assumes it can, and compiles the
+# whole boot classpath without read barriers; ART then rejects its own boot
+# image at runtime and odrefresh has to recompile everything before zygote can
+# start. Still required on 4.14.357 - the sublevel bump did not enable
+# USERFAULTFD, it is simply absent from the defconfig.
 PRODUCT_ENABLE_UFFD_GC := false
