@@ -66,6 +66,22 @@ blob_fixups: blob_fixups_user_type = {
     'vendor/etc/vintf/manifest/manifest_media_c2_V1_2_default.xml': blob_fixup()
         .regex_replace('1.1', '1.2'),
 
+    # The MediaTek software audio decoders are Android 12 blobs built against
+    # the Android 12 Codec2 stack, which we ship renamed (-v31/-v33). Left
+    # unpatched they bind to the platform's own libcodec2_soft_common.so and
+    # libstagefright_foundation.so instead, so the process ends up with two
+    # copies of libstagefright_foundation. ALooperRoster is a per-library
+    # global, so an AMessage registered against one copy is invisible to the
+    # other and SimpleC2Component::start() dereferences a null handler.
+    ('vendor/lib64/libcodec2_soft_mtk_alacdec.so',
+     'vendor/lib64/libcodec2_soft_mtk_apedec.so',
+     'vendor/lib64/libcodec2_soft_mtk_imaadpcmdec.so',
+     'vendor/lib64/libcodec2_soft_mtk_mp3dec.so',
+     'vendor/lib64/libcodec2_soft_mtk_msadpcmdec.so'): blob_fixup()
+        .replace_needed('libcodec2_soft_common.so', 'libcodec2_soft_common-v31.so')
+        .replace_needed('libcodec2_vndk.so', 'libcodec2_vndk-v31.so')
+        .replace_needed('libstagefright_foundation.so', 'libstagefright_foundation-v33.so'),
+
     'vendor/lib/hw/audio.primary.mt6833.so' : blob_fixup()
         .replace_needed('libalsautils.so', 'libalsautils-v31.so')
         .replace_needed('libtinyxml2.so', 'libtinyxml2-v34.so'),
