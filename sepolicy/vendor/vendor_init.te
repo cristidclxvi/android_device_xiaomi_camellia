@@ -1,6 +1,15 @@
 rw_dir_file(vendor_init, sysfs_leds)
 rw_dir_file(vendor_init, sysfs_ged)
 
+# AOSP labels the whole vendor. namespace vendor_default_prop and lets
+# vendor_init write it, which is how stock gets its three MDP image quality
+# switches out of /vendor/build.prop. Our own property_contexts moves the
+# vendor.camera. prefix into vendor_camera_prop so mtk_hal_camera owns it,
+# and that took the write away from init: vendor.camera.mdp.{cz,dre,hfg}
+# .enable were dropped at boot and read back empty. MediaTek grants exactly
+# this for its own equivalent type in sepolicy_vndr.
+set_prop(vendor_init, vendor_camera_prop)
+
 # The modem File Service Daemon inside ccci_mdinit hard-codes ten host
 # roots; the tenth is /data/vendor_de/md, created by init.cccimdinit.rc.
 # Android 14 split /data/vendor_de off as vendor_userdir_file and limited
