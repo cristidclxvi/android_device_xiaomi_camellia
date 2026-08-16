@@ -142,12 +142,21 @@ not published, so your own build gets whichever keys you sign it with.
 
 ## Related
 
-- Kernel: [android_kernel_xiaomi_camellia](https://github.com/cristidclxvi/android_kernel_xiaomi_camellia) — 4.14.186, branch `lineage-23.2`
+- Kernel: [android_kernel_xiaomi_camellia](https://github.com/cristidclxvi/android_kernel_xiaomi_camellia) — 4.14.357-openela, branch `lineage-23.2`
+- Connectivity modules: [android_kernel_modules_xiaomi_camellia](https://github.com/cristidclxvi/android_kernel_modules_xiaomi_camellia), branch `lineage-23.2`
 
-The kernel branch is based directly on MiCode's `camellian-t-oss` commit, so the
-MediaTek and Xiaomi history is intact and
-`git diff f4e416aea06c..lineage-23.2` shows every change made for this device —
-ten files.
+The kernel branch started from MiCode's `camellian-t-oss` drop and has since
+been merged up to the OpenELA 4.14.357 stable tag, so the MediaTek and Xiaomi
+history is intact alongside upstream's. To see what was changed for this
+device on top of the merge:
+
+```
+git log --oneline v4.14.357-openela..lineage-23.2
+```
+
+The Wi-Fi, Bluetooth, GPS, FM and WMT/FEM modules are built from the sources in
+the modules repository rather than shipped as prebuilt binaries. `lsmod` on a
+running device lists exactly what that produces.
 
 ## License
 

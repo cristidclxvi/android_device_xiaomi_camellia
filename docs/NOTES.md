@@ -4,7 +4,8 @@ Notes on the non-obvious parts. Everything here was measured on hardware or read
 out of the shipped build, not inferred.
 
 Device: Redmi Note 10 5G / Redmi Note 10T 5G / POCO M3 Pro 5G, MediaTek MT6833
-(Dimensity 700). Kernel 4.14.186, the newest MiCode published for camellia.
+(Dimensity 700). Kernel 4.14.357-openela: MiCode's 4.14.186 drop merged up to
+the OpenELA stable tag.
 
 ## Android 16 on a 4.14 kernel
 
@@ -56,24 +57,27 @@ iterate.
 
 ### Consequence
 
-Per-app firewall and Data Saver are untested and probably degraded: the cgroup
-BPF programs they depend on do not load on 4.14. Ordinary networking, including
-mobile data, is validated end to end.
+Per-app firewall and Data Saver work. The earlier claim here that cgroup BPF
+does not load on 4.14 was wrong: the cgroupskb programs are pinned and
+restrict-background is enforced, verified on device. Ordinary networking,
+including mobile data, is validated end to end.
 
-A stable-patch bump to 4.14.x-openela is the real fix and would likely remove
-most of this. LineageOS ships `davinci` officially on 4.14.357-openela with an
-**unmodified** Connectivity module, which is strong evidence these patches are
-artifacts of the stale 4.14.186 base rather than of 4.14 itself. Android 16's
-framework compatibility matrix wants >= 4.14.336; hence
-`PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false` in
-`lineage_camellia.mk`. Revert all four hunks and retest after any such bump
-before assuming any are still needed.
+The bump to 4.14.357-openela has since been done, and it did **not** remove the
+need for these patches. Every check the Connectivity patch relaxes tests for
+4.19, 4.20 or 5.4, so no 4.14 sublevel can satisfy them, and `kernel/bpf/btf.c`
+is still absent. `PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS := false`
+likewise stays: the remaining blockers are `HAVE_MOVE_PMD` and `HAVE_MOVE_PUD`,
+which do not exist anywhere in 4.14.
 
 ## Wi-Fi
 
-MiCode never published `vendor/mediatek/kernel_modules`, so the MediaTek
-connectivity drivers ship as stock prebuilts extracted from the device. Proven
-on hardware: they `insmod` cleanly into our self-built 4.14.186 kernel.
+MiCode never published `vendor/mediatek/kernel_modules`, so the sources come
+from a fork of OnePlus's MT6833 modules tree, which is the same SoC. Wi-Fi,
+Bluetooth, GPS, FM and the WMT/FEM support modules are all built from source
+now rather than extracted from the device as prebuilts.
+
+The note below is kept because it still explains why the prebuilts worked at
+the time, and why vermagic is not something to worry about here.
 `same_magic()` discards the release string when a module carries a `__versions`
 section, and all 947 modversion CRCs match, so vermagic is a non-issue. Do
 **not** create `.scmversion`.

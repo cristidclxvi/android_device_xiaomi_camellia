@@ -43,6 +43,6 @@ Google added deliberately. Note that LineageOS already ships an equivalent
 relaxation for the 25Q4/5.10 gate in the same file, and that `davinci` runs
 official LineageOS 23.2 on 4.14.357-openela with an unmodified Connectivity
 module. That strongly suggests most of this patch is a symptom of our stale
-4.14.186 base rather than of 4.14 itself, and that an openela stable bump would
+4.14.186 base rather than of 4.14 itself, and that an openela stable bump might
 remove the need for it. Revert and retest after that bump before proposing
 anything upstream.

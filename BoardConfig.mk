@@ -59,7 +59,8 @@ DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
 DEVICE_MATRIX_FILE := $(DEVICE_PATH)/compatibility_matrix.xml
 
 # Boot image geometry. The kernel itself is built from source, see
-# TARGET_KERNEL_SOURCE below (4.14.186, MiCode camellian-t-oss).
+# TARGET_KERNEL_SOURCE below (4.14.357-openela, MiCode camellian-t-oss merged
+# up to the OpenELA stable tag).
 BOARD_DTB_OFFSET := 0x07c80000
 BOARD_KERNEL_BASE := 0x40000000
 BOARD_KERNEL_PAGESIZE := 2048
