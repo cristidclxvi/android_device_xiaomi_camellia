@@ -11,4 +11,19 @@ genfscon sysfs /devices/platform/11e01000.i2c5/i2c-5/5-004e/tcpc/type_c_port0/wa
 genfscon sysfs /devices/platform/11e01000.i2c5/i2c-5/5-004e/wakeup                       u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/platform/11e02000.i2c7/i2c-7/7-0008/wakeup                       u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/virtual/input/input2/wakeup                                      u:object_r:sysfs_wakeup:s0
+# system_suspend reads name/active_count/total_time_ms/max_time_ms/
+# last_change_ms on every wakeup source to attribute wakeups. These two were
+# inheriting the device label instead, so the fingerprint reader and the fuel
+# gauge - two of the most frequent wake sources - were invisible in the battery
+# breakdown.
+#
+# genfs matching is a raw prefix compare, longest match wins, so the two paths
+# are deliberately NOT written the same way:
+#   fingerprint has an intermediate wakeup/ directory AND a sibling
+#     wakeup_enable, so the trailing slash is load-bearing - without it the
+#     prefix also swallows wakeup_enable and takes it from the fingerprint HAL.
+#   bms has no intermediate directory, just a dynamically numbered wakeupN, so
+#     the prefix stops before the number and must NOT end in a slash.
+genfscon sysfs /devices/platform/fingerprint/wakeup/                                     u:object_r:sysfs_wakeup:s0
+genfscon sysfs /devices/platform/battery/power_supply/bms/wakeup                         u:object_r:sysfs_wakeup:s0
 genfscon sysfs /devices/platform/14000000.dispsys_config/mtk_fb_hbm                       u:object_r:sysfs_livedisplay_tuneable:s0
