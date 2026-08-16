@@ -1,0 +1,22 @@
+diff --git a/jni/fmr/fm.h b/jni/fmr/fm.h
+index af1d7cd..714a992 100644
+--- a/jni/fmr/fm.h
++++ b/jni/fmr/fm.h
+@@ -285,13 +285,13 @@ typedef struct {
+ struct rds_raw_data {
+     int dirty; // indicate if the data changed or not
+     int len; // the data len form chip
+-    uint8_t data[146];
++    uint8_t data[148];
+ };
+ 
+ struct rds_group_cnt {
+-    unsigned long total;
+-    unsigned long groupA[16]; // RDS groupA counter
+-    unsigned long groupB[16]; // RDS groupB counter
++    uint32_t total;
++    uint32_t groupA[16]; // RDS groupA counter
++    uint32_t groupB[16]; // RDS groupB counter
+ };
+ 
+ enum rds_group_cnt_opcode {
