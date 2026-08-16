@@ -41,7 +41,10 @@ persist.vendor.camera3.pipeline.bufnum.min.low_ram.imgo=6
 persist.vendor.camera3.pipeline.bufnum.min.low_ram.lcso=6
 persist.vendor.camera3.pipeline.bufnum.min.low_ram.rrzo=6
 persist.vendor.camera3.pipeline.bufnum.min.low_ram.rsso=6
-ro.mtk_cam_stereo_camera_support=1
+# ro.mtk_cam_stereo_camera_support omitted on purpose: it falls through to
+# default_prop, which a neverallow bars vendor_init from setting, so init
+# drops it and it reads back empty. Stock drops it identically, and no
+# reader for it exists in the stock dump or our vendor image.
 ro.vendor.camera.directfdyuv.support=1
 ro.vendor.camera.isp.support.colorspace=0
 ro.vendor.camera3.zsl.default=270
@@ -260,7 +263,9 @@ ro.vendor.wlan.gen=gen4m
 # ---------------------------------------------------------------------------
 
 # Telephony / radio
-ro.telephony.sim.count=2
+# ro.telephony.sim.count omitted on purpose: same default_prop neverallow as
+# above, and stock drops it too. DSDS comes from
+# persist.radio.multisim.config=dsds, which does take effect.
 ro.vendor.radio.5g=3
 ro.vendor.radio.features_common=2
 ro.vendor.radio.max.multisim=dsds
