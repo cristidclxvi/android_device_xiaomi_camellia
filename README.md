@@ -158,6 +158,33 @@ The Wi-Fi, Bluetooth, GPS, FM and WMT/FEM modules are built from the sources in
 the modules repository rather than shipped as prebuilt binaries. `lsmod` on a
 running device lists exactly what that produces.
 
+## Credits
+
+This tree targets LineageOS 23.2 and was built against the stock MIUI 14 vendor
+image, but it is not the first camellia work and should not read as though it
+were.
+
+Some of it is carried verbatim from the camellia tree at
+[dm700-devs/device_xiaomi_camellia](https://github.com/dm700-devs/device_xiaomi_camellia):
+the power HAL extension under `power/`, the vendor SELinux policy under
+`sepolicy/vendor/`, several of the `rootdir/etc/init.*.rc` files, and the
+extract-utils scaffolding. Those files are unmodified, copyright headers
+included.
+
+Thanks to the people who wrote them: rio004, bengris32, Zinadin Zidan,
+SahilSonar, Matsvei Niaverau, Jerry Zhang, Arne Coucheron and Arian.
+
+Anyone can check exactly what is shared and what is not:
+
+```
+git clone https://github.com/dm700-devs/device_xiaomi_camellia /tmp/dm700
+diff -rq . /tmp/dm700 --exclude=.git
+```
+
+The files under `configs/` are extracted from the stock vendor image. They are
+byte-identical in any camellia tree because they all come out of the same MIUI
+image, not because one was copied from another.
+
 ## License
 
 Apache-2.0, see [LICENSE](LICENSE). Two files under `prebuilt/` are not covered
