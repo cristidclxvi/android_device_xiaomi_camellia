@@ -66,6 +66,18 @@ blob_fixups: blob_fixups_user_type = {
     'vendor/etc/vintf/manifest/manifest_media_c2_V1_2_default.xml': blob_fixup()
         .regex_replace('1.1', '1.2'),
 
+    # The gen4m driver runs its own PMKID check on incoming SoftAP association
+    # requests whenever the selected AKM is SAE. hostapd completes SAE in
+    # userspace, but its NL80211_CMD_EXTERNAL_AUTH status update is rejected by
+    # the driver with EINVAL, so the driver's AP-side PMKID cache is never
+    # populated. Every SAE client then gets refused with "RSN with no PMKID",
+    # which kills the hotspot for any WPA3 or WPA2/WPA3-transition client on
+    # both bands. MediaTek expect the PMKID to arrive via a vendor command that
+    # AOSP's hostapd never issues, so this check cannot ever pass here. Turn it
+    # off; hostapd has already authenticated the peer.
+    'vendor/firmware/wifi.cfg': blob_fixup()
+        .regex_replace(r'EdccaAciCtrl 1', 'EdccaAciCtrl 1\nSapCheckPmkidInDriver 0'),
+
     # The MediaTek software audio decoders are Android 12 blobs built against
     # the Android 12 Codec2 stack, which we ship renamed (-v31/-v33). Left
     # unpatched they bind to the platform's own libcodec2_soft_common.so and
