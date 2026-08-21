@@ -1,0 +1,19 @@
+diff --git a/sensors/aidl/default/multihal/ConvertUtils.cpp b/sensors/aidl/default/multihal/ConvertUtils.cpp
+index 9f28a8107a..ed1465e3ce 100644
+--- a/sensors/aidl/default/multihal/ConvertUtils.cpp
++++ b/sensors/aidl/default/multihal/ConvertUtils.cpp
+@@ -408,7 +408,13 @@ void convertToAidlEvent(const V2_1Event& hidlEvent, AidlEvent* aidlEvent) {
+             break;
+         }
+         default: {
+-            CHECK_GE((int32_t)hidlEvent.sensorType, (int32_t)V2_1SensorType::DEVICE_PRIVATE_BASE);
++            // Some vendors report sensor types below DEVICE_PRIVATE_BASE for
++            // their own sensors; Xiaomi camellia emits type 75. Upstream
++            // asserts that anything unrecognised must be >= DEVICE_PRIVATE_BASE
++            // and CHECK_GE turns that into LOG(FATAL), so one such event aborts
++            // the whole sensors HAL and it crash-loops at boot. The payload copy
++            // below already handles an arbitrary type, so pass the event through
++            // rather than killing the process.
+             AidlEvent::EventPayload::Data data;
+             std::copy(hidlEvent.u.data.data(), hidlEvent.u.data.data() + hidlEvent.u.data.size(),
+                       std::begin(data.values));
