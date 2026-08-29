@@ -1,4 +1,8 @@
-ifeq (eng,$(TARGET_BUILD_VARIANT))
+# The vendor RIL is silenced on shipping builds because it is very chatty.
+# userdebug keeps it at I: with it at S the whole AT / APN / PDN layer is
+# invisible, including the AT tag itself, and IMS problems cannot be
+# diagnosed at all. user builds stay silent.
+ifneq (,$(filter eng userdebug,$(TARGET_BUILD_VARIANT)))
 VENDOR_LOG_LEVEL=I
 else
 VENDOR_LOG_LEVEL=S
